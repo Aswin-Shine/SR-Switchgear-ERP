@@ -1,0 +1,50 @@
+# Root .gitignore — covers files at the repo root and acts as a backstop for
+# both halves. backend/.gitignore and frontend/.gitignore still apply within
+# their own directories; this just means the same patterns hold if a command
+# is ever run from the repo root instead.
+
+# --- OS / editor ----------------------------------------------------------
+.DS_Store
+*.swp
+
+# --- Environment files (see .env.example, backend/.env.example) -----------
+.env
+*.env.local
+
+# --- Python (backend) -------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.sqlite3
+.coverage
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.dump
+*.egg-info/
+
+# --- db/ (see db/README.md) — dumps can contain real business data ---------
+db/backups/
+
+# Django's collected static/media, wherever DJANGO_STATIC_ROOT/MEDIA_ROOT
+# point (defaults land under backend/).
+backend/static/
+backend/media/
+
+# --- Node (frontend) --------------------------------------------------------
+node_modules/
+dist/
+playwright-report/
+test-results/
+.vite/
+*.local
+
+# --- graphify (generated knowledge graph — local only, not for GitHub) ------
+graphify-out/
+
+# --- Internal-only docs (real business/employee data, not for a public repo) -
+CLAUDE.md
+Error-Fixes.md
+company-docs/
