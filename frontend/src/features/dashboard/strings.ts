@@ -1,0 +1,15 @@
+export const strings = {
+  title: (name: string) => `Good day, ${name}`,
+  subtitle: "What is waiting on you.",
+  statCards: "My open job cards",
+  statLines: "Lines I can move",
+  awaitingTitle: "Needs my attention",
+  awaitingSubtitle: "Lines where you hold an action right now.",
+  awaitingEmpty: "Nothing is waiting on you.",
+  cardsTitle: "My open job cards",
+  cardsEmpty: "You have no open job cards.",
+  activityTitle: "Recent activity",
+  activityEmpty: "No moves recorded yet.",
+  openBoard: "Open the board",
+  newEnquiry: "New enquiry",
+} as const;

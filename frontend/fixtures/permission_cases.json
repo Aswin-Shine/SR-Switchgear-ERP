@@ -1,0 +1,123 @@
+{
+  "schema_version": 2,
+  "description": "Case table for frontend/src/auth/can.ts, matching apps/identity/services.has_permission's real semantics: a matching (resource, action) grant permits; if_owner narrows it to objects the user owns; there is no explicit-denial level. `level` (0/1/2) is a field-sensitivity threshold the client never asks for (it always effectively checks level 0), carried here for shape-fidelity with the real GrantEntry wire type. NOTE: as of schema_version 2 there is no pytest counterpart reading this file — the cross-checked CI drift control CLAUDE.md describes for this file does not currently exist on the backend side.",
+  "grant_shape": {
+    "resource": "resource code, or '*' for any",
+    "action": "action code, or '*' for any",
+    "level": "field-sensitivity threshold (0/1/2); irrelevant here since every check is level 0",
+    "if_owner": "boolean; narrows the grant to objects whose owner_user_id is the user"
+  },
+  "cases": [
+    {
+      "name": "no grants at all denies",
+      "user_id": "u-sales",
+      "grants": [],
+      "resource": "job_card",
+      "action": "view",
+      "object": { "owner_user_id": "u-sales" },
+      "expected": false
+    },
+    {
+      "name": "an unrestricted grant permits any object",
+      "user_id": "u-manager",
+      "grants": [{ "resource": "job_card", "action": "view", "level": 0, "if_owner": false }],
+      "resource": "job_card",
+      "action": "view",
+      "object": { "owner_user_id": "u-someone-else" },
+      "expected": true
+    },
+    {
+      "name": "an owner-scoped grant permits the owner",
+      "user_id": "u-sales",
+      "grants": [{ "resource": "job_card", "action": "edit", "level": 0, "if_owner": true }],
+      "resource": "job_card",
+      "action": "edit",
+      "object": { "owner_user_id": "u-sales" },
+      "expected": true
+    },
+    {
+      "name": "an owner-scoped grant denies a card owned by someone else",
+      "user_id": "u-sales",
+      "grants": [{ "resource": "job_card", "action": "edit", "level": 0, "if_owner": true }],
+      "resource": "job_card",
+      "action": "edit",
+      "object": { "owner_user_id": "u-other" },
+      "expected": false
+    },
+    {
+      "name": "if_owner narrows the grant regardless of level",
+      "user_id": "u-sales",
+      "grants": [{ "resource": "job_line", "action": "transition", "level": 0, "if_owner": true }],
+      "resource": "job_line",
+      "action": "transition",
+      "object": { "owner_user_id": "u-other" },
+      "expected": false
+    },
+    {
+      "name": "an owner-scoped grant with no object permits: the server checks the object",
+      "user_id": "u-sales",
+      "grants": [{ "resource": "job_card", "action": "create", "level": 0, "if_owner": true }],
+      "resource": "job_card",
+      "action": "create",
+      "object": null,
+      "expected": true
+    },
+    {
+      "name": "wildcard resource covers every resource",
+      "user_id": "u-admin",
+      "grants": [{ "resource": "*", "action": "view", "level": 0, "if_owner": false }],
+      "resource": "client",
+      "action": "view",
+      "object": { "owner_user_id": "u-other" },
+      "expected": true
+    },
+    {
+      "name": "wildcard action covers every action on that resource",
+      "user_id": "u-sales-head",
+      "grants": [{ "resource": "job_line", "action": "*", "level": 0, "if_owner": false }],
+      "resource": "job_line",
+      "action": "transition",
+      "object": { "owner_user_id": "u-other" },
+      "expected": true
+    },
+    {
+      "name": "a grant on another action does not leak",
+      "user_id": "u-sales",
+      "grants": [{ "resource": "job_card", "action": "view", "level": 0, "if_owner": false }],
+      "resource": "job_card",
+      "action": "edit",
+      "object": { "owner_user_id": "u-sales" },
+      "expected": false
+    },
+    {
+      "name": "a grant on another resource does not leak",
+      "user_id": "u-sales",
+      "grants": [{ "resource": "job_card", "action": "edit", "level": 0, "if_owner": false }],
+      "resource": "quotation",
+      "action": "edit",
+      "object": null,
+      "expected": false
+    },
+    {
+      "name": "an unowned object cannot satisfy an owner-scoped grant",
+      "user_id": "u-sales",
+      "grants": [{ "resource": "job_card", "action": "edit", "level": 0, "if_owner": true }],
+      "resource": "job_card",
+      "action": "edit",
+      "object": { "owner_user_id": null },
+      "expected": false
+    },
+    {
+      "name": "the unrestricted grant of two decides, regardless of order",
+      "user_id": "u-sales",
+      "grants": [
+        { "resource": "job_line", "action": "view", "level": 0, "if_owner": true },
+        { "resource": "job_line", "action": "view", "level": 0, "if_owner": false }
+      ],
+      "resource": "job_line",
+      "action": "view",
+      "object": { "owner_user_id": "u-other" },
+      "expected": true
+    }
+  ]
+}

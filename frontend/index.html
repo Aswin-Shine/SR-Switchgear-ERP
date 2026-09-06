@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SR Switchgear ERP</title>
+
+    <!-- Inline so the tab icon costs no request, and nothing is fetched off-origin. -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231d4ed8'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='14' font-weight='700' fill='white' text-anchor='middle'%3ESR%3C/text%3E%3C/svg%3E"
+    />
+
+    <!--
+      Django renders this file as a template (see FRONTEND_PLAN.md, "Serving and build").
+      CSRF_COOKIE_HTTPONLY stays True, so the token arrives in a meta tag rather than
+      a readable cookie. The csrf-token meta and bootstrap script below are Django
+      template variables: when Vite serves this file in dev they stay unrendered, and
+      api/client.ts treats an unrendered token as absent — the dev proxy passes the
+      real cookie through anyway.
+
+      NOTE: never write the literal two-character open/close template-tag delimiters
+      in this comment (not even inside backticks or quotes) — Django's template lexer
+      scans the raw file for them everywhere, HTML comments included, and a stray or
+      unpaired one here breaks parsing of the real tags below.
+    -->
+    <meta name="csrf-token" content="{{ csrf_token }}" />
+    <script type="application/json" id="bootstrap">{{ bootstrap_json|default:"{}" }}</script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
