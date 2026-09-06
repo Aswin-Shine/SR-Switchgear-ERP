@@ -1,0 +1,21 @@
+# =============================================================================
+# One-shot helper — NOT part of the running stack. Produces the bcrypt hash
+# the Caddyfile's basic_auth block needs, from CADDY_BASIC_AUTH_PASSWORD in
+# .env. Run this first, once, before the real stack, and again any time you
+# change that password:
+#
+#   docker compose -f docker-compose.caddy.yaml run --rm hash-password
+#
+# Copy the printed $2a$... line into CADDY_BASIC_AUTH_HASH in .env. The
+# Caddyfile reads CADDY_BASIC_AUTH_USERNAME/CADDY_BASIC_AUTH_HASH from the
+# environment at startup — the plaintext password is never written to the
+# Caddyfile and never read by Caddy itself.
+# =============================================================================
+
+services:
+  hash-password:
+    image: caddy:2-alpine
+    environment:
+      CADDY_BASIC_AUTH_PASSWORD: ${CADDY_BASIC_AUTH_PASSWORD:?set CADDY_BASIC_AUTH_PASSWORD in .env}
+    entrypoint: ["sh", "-c"]
+    command: ["caddy hash-password --plaintext \"$$CADDY_BASIC_AUTH_PASSWORD\""]

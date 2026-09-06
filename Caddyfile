@@ -1,0 +1,53 @@
+# =============================================================================
+# SR Switchgear ERP — Caddy reverse proxy (TLS + HSTS + Basic Auth gate)
+#
+# This sits in front of the `web` container, run via docker-compose.yml's
+# opt-in `caddy` service (`docker compose --profile caddy up -d --build`) —
+# off by default like `minio`.
+#
+# Two layers of auth on purpose:
+#   1. Basic Auth here — stops anonymous internet scanners/bots from even
+#      reaching Django's /login/ page. Shared credential, not per-user.
+#   2. Django's real login (session-based, per-employee) — unchanged,
+#      still the actual access control. apps/identity/views.py::app_shell
+#      is @login_required and /api/v1/ returns 401 without a session
+#      regardless of what happens here.
+#
+# Site address and TLS mode both come from the environment, so this one
+# file covers local dev and a real deployment host without editing it:
+#   CADDY_SITE_ADDRESS  localhost for local dev; your real domain in
+#                        production (DNS A/AAAA -> this host, 80/443 open).
+#   CADDY_TLS_ARG        `internal` locally (Caddy's own local CA, no
+#                        internet/DNS needed — browsers warn, that's
+#                        expected); your real email in production (used
+#                        for ACME/Let's Encrypt account + renewal notices).
+# See .env.example's "Caddy reverse proxy" section and IMPLEMENTATION.md
+# §6 for both sets of values.
+#
+# Basic Auth reads CADDY_BASIC_AUTH_USERNAME / CADDY_BASIC_AUTH_HASH from
+# the environment (set in .env). Generate the hash first:
+#   docker compose -f docker-compose.caddy.yaml run --rm hash-password
+# and put its output in .env as CADDY_BASIC_AUTH_HASH — see .env.example.
+# =============================================================================
+
+{$CADDY_SITE_ADDRESS} {
+	tls {$CADDY_TLS_ARG}
+
+	encode gzip zstd
+
+	header {
+		# HSTS: 1 year, apply to subdomains, eligible for browser preload lists
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Don't leak the proxy's identity
+		-Server
+	}
+
+	basic_auth {
+		{$CADDY_BASIC_AUTH_USERNAME} {$CADDY_BASIC_AUTH_HASH}
+	}
+
+	reverse_proxy web:8000
+}

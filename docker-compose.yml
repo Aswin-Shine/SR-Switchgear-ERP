@@ -1,0 +1,163 @@
+# =============================================================================
+# SR Switchgear ERP — production stack (frontend + backend, one image)
+#
+# There is no separate frontend container: the React SPA is built at image
+# build time (backend/Dockerfile's frontend-builder stage) and served by the
+# same gunicorn process as the API and the Django admin, from one origin —
+# see backend/FRONTEND_PLAN.md ("Serving and build") for why that's
+# deliberate (CSRF_COOKIE_HTTPONLY, no CORS).
+#
+# Usage:
+#   cp .env.example .env               # fill in DJANGO_SECRET_KEY, POSTGRES_PASSWORD, ...
+#   docker compose up -d --build
+#   docker compose exec web python manage.py bootstrap_admin \
+#       --username owner --full-name "Your Name"             # first run only
+#
+# Self-hosted object storage instead of real S3:
+#   docker compose --profile minio up -d --build
+#
+# This compose file expects TLS to be terminated in front of it (a load
+# balancer, Caddy/nginx/Traefik, or a platform's ingress) — production.py
+# sets SECURE_PROXY_SSL_HEADER and redirects http->https accordingly. A
+# Caddy option is bundled below, off by default like `minio`; generate its
+# Basic Auth hash first (see docker-compose.caddy.yaml), then:
+#   docker compose --profile caddy up -d --build
+# `web`'s own port stays published on loopback only (see `web.ports` below)
+# so Caddy — not a direct :8000 hit — is the only public entry point once
+# it's running. See IMPLEMENTATION.md §6 for local vs. real-deployment env
+# values (CADDY_SITE_ADDRESS / CADDY_TLS_ARG).
+# =============================================================================
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-srerp}
+      POSTGRES_USER: ${POSTGRES_USER:-srerp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      TZ: Asia/Kolkata
+      PGTZ: Asia/Kolkata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-srerp} -d ${POSTGRES_DB:-srerp}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+    # No host port published by default — only `web` needs to reach `db`,
+    # over the compose network. Uncomment to reach it with a local psql:
+    # ports:
+    #   - "127.0.0.1:5432:5432"
+
+  # Self-hosted S3-compatible storage, for stacks with no external object
+  # store. Off by default — the plain profile assumes STORAGE_BACKEND=s3
+  # points at real AWS S3 (or another external endpoint) via .env. Enable
+  # with `docker compose --profile minio up -d`.
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    profiles: ["minio"]
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+
+  web:
+    build:
+      # Repo root: the Dockerfile copies from both backend/ and frontend/.
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # Compose-network values that override whatever .env says, since .env
+      # is shared with the non-Docker local-deployment path where these
+      # differ (see LOCAL_DEPLOYMENT.md).
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      # Only takes effect with --profile minio; harmless otherwise since
+      # STORAGE_BACKEND controls whether it's read at all.
+      AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:-http://minio:9000}
+    ports:
+      # Loopback only: with --profile caddy, Caddy is the public entry
+      # point (80/443) and reaches this over the compose network as
+      # `web:8000` regardless of this mapping. Bound to 127.0.0.1 so a
+      # stranger can't curl :8000 directly on a real deployment host and
+      # skip Caddy's TLS/Basic Auth gate entirely; still reachable at
+      # http://localhost:8000 for local dev with no profile at all.
+      - "127.0.0.1:8000:8000"
+    # The image assumes a read-only root filesystem apart from /tmp
+    # (STATIC_ROOT and gunicorn's --worker-tmp-dir both live under it) and
+    # /srv/app/media (MEDIA_ROOT, backend/config/settings/base.py) — enforced
+    # here, not just assumed. The media mount only matters when
+    # STORAGE_BACKEND=filesystem; harmless and unused otherwise, same as
+    # AWS_S3_ENDPOINT_URL above.
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - media_data:/srv/app/media
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz/', timeout=4).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  # TLS + HSTS + Basic Auth in front of `web`. Off by default like `minio`.
+  # Enable with `docker compose --profile caddy up -d --build` — see
+  # Caddyfile and IMPLEMENTATION.md §6 for the local-vs-deployment env
+  # values (CADDY_SITE_ADDRESS / CADDY_TLS_ARG) and the one-shot
+  # docker-compose.caddy.yaml step that produces CADDY_BASIC_AUTH_HASH.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    profiles: ["caddy"]
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:-localhost}
+      CADDY_TLS_ARG: ${CADDY_TLS_ARG:-internal}
+      CADDY_BASIC_AUTH_USERNAME: ${CADDY_BASIC_AUTH_USERNAME:-stranger}
+      CADDY_BASIC_AUTH_HASH: ${CADDY_BASIC_AUTH_HASH:?set CADDY_BASIC_AUTH_HASH in .env — see docker-compose.caddy.yaml}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  pgdata:
+  miniodata:
+  caddy_data:
+  caddy_config:
+  media_data:
