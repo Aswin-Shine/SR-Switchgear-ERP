@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sr-switchgear-erp"
+version = "0.1.0"
+description = "SR Switchgear ERP — Modules 1 (HR, identity, RBAC) and 2 (Sales, quotation, job pipeline)"
+requires-python = ">=3.12"
+
+# Runtime dependencies. Every one is justified in BACKEND_PLAN.md section 7;
+# nothing is added without a reason recorded there.
+# Ranges here; requirements.txt carries the exact versions the suite was run
+# against and is what the image installs.
+dependencies = [
+    "django==5.2.*",          # LTS. 4.2 is EOL, 6.x is not LTS.
+    "psycopg[binary]==3.*",   # DB driver.
+    "gunicorn>=23",           # WSGI server.
+    "django-storages[s3]==1.*",  # Phase 3 object storage.
+    "whitenoise==6.*",        # Serves the built SPA from gunicorn, no nginx sidecar.
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.*",
+    "pytest-django==4.*",
+    "pytest-cov==6.*",
+    "factory_boy==3.*",
+    "ruff==0.*",
+    "mypy==1.*",
+]
+
+# This project is never imported as a library — manage.py resolves apps/ and
+# config/ by running from the repo's backend/ directory, not via site-packages.
+# `pip install -e ".[dev]"` exists only to resolve and install the dev extras
+# above; without this, setuptools' auto-discovery finds apps/, config/,
+# docker/ and templates/ as ambiguous top-level packages and refuses to build
+# anything at all.
+[tool.setuptools]
+packages = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["*/migrations/*.py"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "UP",       # pyupgrade
+    "B",        # bugbear
+    "C4",       # comprehensions
+    "DJ",       # flake8-django
+    "S",        # bandit
+    "RUF",
+]
+ignore = [
+    "S101",   # assert: pytest uses it.
+    "RUF012", # Django's Meta/admin class attrs are not ClassVar-annotated by convention.
+    # DJ001 prefers '' over NULL on text columns. The reference schema declares
+    # these columns nullable (hr_employees.personal_email, sales_clients.gstin,
+    # pipeline_transition_rules.condition_expr and six others), and the schema
+    # outranks a style preference — NULL and '' are also genuinely different
+    # here: a condition_expr of '' would be an empty expression to evaluate,
+    # where NULL means "no condition".
+    "DJ001",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Test fixtures use hard-coded throwaway passwords on purpose.
+"tests/*" = ["S105", "S106", "S311"]
+# Migrations are generated and then hand-edited; long raw SQL lines are fine.
+"apps/*/migrations/*" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]
+
+# BACKEND_PLAN.md section 7: mypy runs over services and selectors only, with
+# ignore_missing_imports, until django-stubs is reconsidered at Phase 6.
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+files = ["apps/*/services.py", "apps/*/selectors.py"]
+warn_unused_ignores = true
+no_implicit_optional = true
+
+[tool.coverage.run]
+source = ["apps"]
+omit = ["*/migrations/*", "*/tests/*", "*/admin.py", "*/apps.py"]
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "raise NotImplementedError", "if TYPE_CHECKING:"]

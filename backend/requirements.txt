@@ -1,0 +1,24 @@
+# Runtime dependencies only. Dev tooling lives in pyproject.toml's [dev] extra
+# and is deliberately absent from the image.
+#
+# These are the exact versions the test suite was run against, read out of the
+# working environment rather than guessed. Every direct entry is justified in
+# BACKEND_PLAN.md section 7. Regenerate with:
+#   pip install -e . && pip freeze
+django==5.2.17
+psycopg[binary]==3.3.4
+gunicorn==26.1.0
+django-storages[s3]==1.14.6
+whitenoise==6.12.0
+
+# Transitive, pinned so the image is reproducible.
+asgiref==3.12.1
+sqlparse==0.6.0
+boto3==1.43.78
+botocore==1.43.78
+jmespath==1.1.0
+python-dateutil==2.9.0.post0
+s3transfer==0.19.2
+six==1.17.0
+typing_extensions==4.16.0
+urllib3==2.7.0

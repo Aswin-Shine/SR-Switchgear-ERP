@@ -1,0 +1,181 @@
+"""Reads for the sales app.
+
+The soft-delete filter is written out at every call site rather than hidden in
+a manager, and it matches ``idx_job_cards_open``
+(``WHERE deleted_at IS NULL AND lifecycle_status IN ('open','quoted')``) — so
+``open_job_cards_for`` is the query that index exists to serve.
+"""
+
+from __future__ import annotations
+
+from django.db.models import Q, QuerySet
+
+from apps.sales.models import (
+    Client,
+    ClientContact,
+    JobAttachment,
+    JobCard,
+    JobLifecycleStatus,
+    JobLine,
+    JobNote,
+    Quotation,
+    QuotationLine,
+)
+
+OPEN_STATUSES = (
+    JobLifecycleStatus.OPEN,
+    JobLifecycleStatus.QUOTED,
+    JobLifecycleStatus.REWORK,
+)
+
+
+def live_clients() -> QuerySet[Client]:
+    return Client.objects.filter(deleted_at__isnull=True)
+
+
+def search_clients(term: str = "", *, active_only: bool = False) -> QuerySet[Client]:
+    queryset = live_clients()
+    if active_only:
+        queryset = queryset.filter(is_active=True)
+    if term:
+        queryset = queryset.filter(
+            Q(legal_name__icontains=term)
+            | Q(client_code__icontains=term)
+            | Q(gstin__icontains=term)
+        )
+    return queryset.order_by("client_code")
+
+
+def contacts_for(client: Client) -> QuerySet[ClientContact]:
+    return ClientContact.objects.filter(
+        client=client, deleted_at__isnull=True
+    ).order_by("-is_primary", "contact_name")
+
+
+def live_job_cards() -> QuerySet[JobCard]:
+    return JobCard.objects.filter(deleted_at__isnull=True).select_related(
+        "client", "owner_user", "client_contact"
+    )
+
+
+def open_job_cards_for(owner_user=None) -> QuerySet[JobCard]:
+    """The per-rep open-jobs list. Matches idx_job_cards_open exactly."""
+    queryset = live_job_cards().filter(lifecycle_status__in=OPEN_STATUSES)
+    if owner_user is not None:
+        queryset = queryset.filter(owner_user=owner_user)
+    return queryset.order_by("-enquiry_date")
+
+
+def search_job_cards(
+    term: str = "", *, status: str = "", owner_user=None, client_id=None
+) -> QuerySet[JobCard]:
+    queryset = live_job_cards()
+    if status:
+        queryset = queryset.filter(lifecycle_status=status)
+    if owner_user is not None:
+        queryset = queryset.filter(owner_user=owner_user)
+    if client_id is not None:
+        queryset = queryset.filter(client_id=client_id)
+    if term:
+        queryset = queryset.filter(
+            Q(job_no__icontains=term)
+            | Q(client__legal_name__icontains=term)
+            | Q(client__client_code__icontains=term)
+        )
+    return queryset.order_by("-enquiry_date", "-job_no")
+
+
+def lines_for(job_card: JobCard) -> QuerySet[JobLine]:
+    return (
+        JobLine.objects.filter(job_card=job_card, deleted_at__isnull=True)
+        .select_related("product_category", "current_stage")
+        .order_by("line_no")
+    )
+
+
+def notes_for(job_card: JobCard) -> QuerySet[JobNote]:
+    return (
+        JobNote.objects.filter(job_card=job_card)
+        .select_related("author_user", "job_line")
+        .order_by("-created_at")
+    )
+
+
+def attachments_for(job_card: JobCard) -> QuerySet[JobAttachment]:
+    return (
+        JobAttachment.objects.filter(job_card=job_card)
+        .select_related("document", "attached_by", "job_line")
+        .order_by("-attached_at")
+    )
+
+
+def quotations_for(job_card: JobCard) -> QuerySet[Quotation]:
+    """Newest revision first, so the current one is at the top."""
+    return (
+        Quotation.objects.filter(job_card=job_card)
+        .select_related("pdf_document", "prepared_by")
+        .order_by("-revision_no")
+    )
+
+
+def quotation_lines_for(quotation: Quotation) -> QuerySet[QuotationLine]:
+    return (
+        QuotationLine.objects.filter(quotation=quotation)
+        .select_related("job_line")
+        .order_by("job_line__line_no")
+    )
+
+
+def latest_quotation_by_card(job_card_ids) -> dict:
+    """``{job_card_id: {"quotation_no", "revision_no", "status"}}`` for the
+    highest-revision quotation on each job card.
+
+    A quotation is created against a job card as a whole, not against
+    specific lines: the "New revision" upload flow
+    (``apps.sales.api.job_card_quotations`` POST) never populates
+    ``QuotationLine`` (see ``NewRevisionDialog.tsx``'s docstring — there is
+    no covered-lines field to fill in). So every line on a card shares that
+    card's current revision; there is no real per-line linkage to join
+    through. One query via Postgres ``DISTINCT ON``, same pattern as
+    ``apps.pipeline.selectors._last_movers``.
+    """
+    if not job_card_ids:
+        return {}
+    rows = (
+        Quotation.objects.filter(job_card_id__in=job_card_ids)
+        .order_by("job_card_id", "-revision_no")
+        .distinct("job_card_id")
+    )
+    return {
+        row.job_card_id: {
+            "quotation_no": row.quotation_no,
+            "revision_no": row.revision_no,
+            "status": row.status,
+        }
+        for row in rows
+    }
+
+
+def has_quotation_pdf_for_card(job_card_id) -> bool:
+    """Whether this job card has ever had a quotation revision with a PDF
+    attached. Backs the ``has_quotation_pdf`` name in
+    ``apps.pipeline.services.condition_context`` — the "negotiate" transition
+    rule requires it, so a line can't reach Negotiation on a card nobody has
+    actually quoted."""
+    return Quotation.objects.filter(
+        job_card_id=job_card_id, pdf_document__isnull=False
+    ).exists()
+
+
+def quotation_pdf_exists_by_card(job_card_ids) -> dict:
+    """``{job_card_id: True}`` for every card with at least one quotation
+    that has a PDF attached — the bulk form of ``has_quotation_pdf_for_card``,
+    one query for the whole board rather than one per line."""
+    if not job_card_ids:
+        return {}
+    ids = (
+        Quotation.objects.filter(job_card_id__in=job_card_ids, pdf_document__isnull=False)
+        .values_list("job_card_id", flat=True)
+        .distinct()
+    )
+    return dict.fromkeys(ids, True)

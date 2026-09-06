@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SR Switchgear ERP{% endblock %}</title>
+  <style>
+    :root { color-scheme: light dark; --fg:#1a1a1a; --bg:#fdfdfc; --muted:#6b6b6b;
+            --line:#d8d8d4; --accent:#1f4e79; --err:#a11; }
+    @media (prefers-color-scheme: dark) {
+      :root { --fg:#e8e8e6; --bg:#1b1b1a; --muted:#a0a0a0; --line:#3a3a38;
+              --accent:#7aa7d0; --err:#e88; }
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;
+           color:var(--fg); background:var(--bg); }
+    .wrap { max-width:26rem; margin:4rem auto; padding:0 1.25rem; }
+    h1 { font-size:1.35rem; margin:0 0 .35rem; }
+    .sub { color:var(--muted); margin:0 0 1.75rem; font-size:.9rem; }
+    label { display:block; margin:1rem 0 .3rem; font-size:.85rem; font-weight:600; }
+    input { width:100%; padding:.6rem .7rem; font:inherit; color:var(--fg);
+            background:transparent; border:1px solid var(--line); border-radius:6px; }
+    input:focus { outline:2px solid var(--accent); outline-offset:1px; }
+    button { margin-top:1.5rem; width:100%; padding:.65rem; font:inherit;
+             font-weight:600; color:#fff; background:var(--accent); border:0;
+             border-radius:6px; cursor:pointer; }
+    .msg { padding:.6rem .75rem; border-radius:6px; border:1px solid var(--line);
+           margin-bottom:1rem; font-size:.9rem; }
+    .msg.error { border-color:var(--err); color:var(--err); }
+    .note { margin-top:1.25rem; font-size:.85rem; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="msg {{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
