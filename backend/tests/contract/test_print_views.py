@@ -74,7 +74,7 @@ def test_a_role_with_no_job_card_view_grant_gets_a_403_not_a_crash(client, card)
 def test_a_nonexistent_card_is_a_404(client, sales):
     client.force_login(sales)
 
-    response = client.get("/print/job-card/JOB-1900-99999")
+    response = client.get("/print/job-card/JOB-1900-JAN-99999")
 
     assert response.status_code == 404
 

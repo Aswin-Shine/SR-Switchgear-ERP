@@ -10,6 +10,16 @@ remember to reset it. The worked example in the schema review is
 ``JOB-2026-00001``, and note that ``next_number`` concatenates the prefix
 directly — the trailing hyphen is part of the prefix, not added by the function.
 
+Job and quotation numbers additionally carry a 3-letter month abbreviation:
+``JOB-2026-SEP-00001``. That month is spliced into the *string* only, in
+``_next_dated_number`` below — the counter key stays ``JOB-2026-``/``QT-2026-``
+(year only, unchanged). This is deliberate: the serial keeps incrementing
+across the whole year rather than resetting each month, so the key it's
+issued under must not change when the month turns. Do not "simplify" this by
+folding the month into the key passed to ``next_number`` — that would give
+each month its own counter row starting back at 1, which is exactly the
+per-month reset this format does not want.
+
 On gaps — the schema comment and BACKEND_PLAN.md section 11 both say a
 rolled-back transaction leaves a hole. Measured against PostgreSQL 16, it does
 not. That warning is true of a ``SEQUENCE``, whose ``nextval`` is deliberately
@@ -35,6 +45,12 @@ JOB_PREFIX = "JOB"
 QUOTATION_PREFIX = "QT"
 DEFAULT_WIDTH = 5
 
+#: Explicit, not ``date.strftime("%b")`` — must not depend on the server's locale.
+MONTH_ABBR = (
+    "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+)
+
 #: No year component — unlike JOB/QT, an employee code is never reissued
 #: per calendar year, so this is one row in core_number_series forever.
 EMPLOYEE_PREFIX = "SRS-"
@@ -59,12 +75,23 @@ def year_prefix(stem: str, on: date | None = None) -> str:
     return f"{stem}-{year}-"
 
 
+def _next_dated_number(stem: str, on: date | None) -> str:
+    """``next_number()``'s counter key stays year-only (unchanged) so the
+    serial keeps incrementing across the whole year; the month is spliced
+    into the *returned* string only, purely for display."""
+    d = on or date.today()
+    prefix = year_prefix(stem, d)
+    raw = next_number(prefix)
+    serial = raw.removeprefix(prefix)
+    return f"{prefix}{MONTH_ABBR[d.month - 1]}-{serial}"
+
+
 def next_job_no(on: date | None = None) -> str:
-    return next_number(year_prefix(JOB_PREFIX, on))
+    return _next_dated_number(JOB_PREFIX, on)
 
 
 def next_quotation_no(on: date | None = None) -> str:
-    return next_number(year_prefix(QUOTATION_PREFIX, on))
+    return _next_dated_number(QUOTATION_PREFIX, on)
 
 
 def next_employee_code() -> str:

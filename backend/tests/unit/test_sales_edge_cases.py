@@ -157,7 +157,7 @@ def test_get_job_card_finds_by_number(sales):
 @pytest.mark.django_db
 def test_get_job_card_raises_not_found_for_an_unknown_number():
     with pytest.raises(NotFound, match="No job card numbered"):
-        get_job_card("JOB-1999-00001")
+        get_job_card("JOB-1999-JAN-00001")
 
 
 @pytest.mark.django_db

@@ -202,7 +202,7 @@ class JobCardFactory(DjangoModelFactory):
     class Meta:
         model = JobCard
 
-    job_no = factory.Sequence(lambda n: f"JOB-2026-{n:05d}")
+    job_no = factory.Sequence(lambda n: f"JOB-2026-JAN-{n:05d}")
     client = factory.SubFactory(ClientFactory)
     owner_user = factory.SubFactory(UserAccountFactory)
     # The card carries no free-text title: the schema describes the work on the
@@ -226,7 +226,7 @@ class QuotationFactory(DjangoModelFactory):
     class Meta:
         model = Quotation
 
-    quotation_no = factory.Sequence(lambda n: f"QT-2026-{n:05d}")
+    quotation_no = factory.Sequence(lambda n: f"QT-2026-JAN-{n:05d}")
     job_card = factory.SubFactory(JobCardFactory)
     revision_no = 0
     prepared_by = factory.SubFactory(UserAccountFactory)

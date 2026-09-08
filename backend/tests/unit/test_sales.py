@@ -8,6 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from apps.core.exceptions import PermissionDenied, RuleViolation
 from apps.core.models import Document
+from apps.core.numbering import MONTH_ABBR
 from apps.identity import constants
 from apps.identity.models import Role
 from apps.pipeline.services import perform_transition
@@ -131,9 +132,10 @@ def test_job_numbers_are_sequential_and_zero_padded(sales):
     first = create_job_card(sales, client)
     second = create_job_card(sales, client)
 
-    year = datetime.date.today().year
-    assert first.job_no == f"JOB-{year}-00001"
-    assert second.job_no == f"JOB-{year}-00002"
+    today = datetime.date.today()
+    month = MONTH_ABBR[today.month - 1]
+    assert first.job_no == f"JOB-{today.year}-{month}-00001"
+    assert second.job_no == f"JOB-{today.year}-{month}-00002"
 
 
 @pytest.mark.django_db
@@ -142,9 +144,10 @@ def test_quotation_numbers_use_their_own_counter(sales, owner):
     card = create_job_card(sales, client)
     quotation = create_quotation_revision(owner, card, pdf=a_pdf())
 
-    year = datetime.date.today().year
-    assert card.job_no == f"JOB-{year}-00001"
-    assert quotation.quotation_no == f"QT-{year}-00001"
+    today = datetime.date.today()
+    month = MONTH_ABBR[today.month - 1]
+    assert card.job_no == f"JOB-{today.year}-{month}-00001"
+    assert quotation.quotation_no == f"QT-{today.year}-{month}-00001"
 
 
 # --- dispatch policy: the three cases the plan requires ---------------------------------
