@@ -70,7 +70,15 @@ def search_job_cards(
     term: str = "", *, status: str = "", owner_user=None, client_id=None
 ) -> QuerySet[JobCard]:
     queryset = live_job_cards()
-    if status:
+    if status == "active":
+        # Not a real lifecycle_status value — matches open_job_cards_for()'s
+        # OPEN_STATUSES exactly, so the list's "Active" filter and the Dashboard's
+        # "My open job cards" agree on what "still open" means. Previously the list's
+        # default filtered on the literal `open` status alone (freshly-created,
+        # unquoted cards only), silently excluding `quoted`/`rework` cards the
+        # Dashboard already counted as open — a real, reported inconsistency.
+        queryset = queryset.filter(lifecycle_status__in=OPEN_STATUSES)
+    elif status:
         queryset = queryset.filter(lifecycle_status=status)
     if owner_user is not None:
         queryset = queryset.filter(owner_user=owner_user)

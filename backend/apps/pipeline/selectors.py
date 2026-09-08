@@ -37,6 +37,15 @@ def _serialise_action(rule: TransitionRule, *, blocked_by: str | None) -> dict:
             "id": str(rule.to_stage_id),
             "code": str(rule.to_stage.code),
             "name": rule.to_stage.name,
+            # So the client can style a move to a dead-end stage (e.g. Lost, Cancelled)
+            # differently from ordinary forward progress — without ever comparing a
+            # stage code against a literal, per this app's own architecture rule.
+            "is_terminal": rule.to_stage.is_terminal,
+            # Distinguishes a routine commercial outcome (Lost/Won) from an
+            # administrative override (Cancelled) — both are "terminal", but only
+            # Cancelled is a kill switch. Values mirror JobLifecycleStatus, the one
+            # other domain this codebase already treats as symbolically comparable.
+            "cascades_job_card_status": rule.to_stage.cascades_job_card_status,
         },
         "requires_note": rule.requires_note,
         "available": blocked_by is None,
@@ -189,7 +198,7 @@ def board_visible_lines(lines: list) -> list:
     if not hide_after:
         return lines
 
-    entered_at = _last_transition_at(
+    entered_at = last_transition_at(
         {line.pk for line in lines if line.current_stage_id in hide_after}
     )
     now = timezone.now()
@@ -208,7 +217,7 @@ def board_visible_lines(lines: list) -> list:
     return visible
 
 
-def _last_transition_at(job_line_ids: set) -> dict:
+def last_transition_at(job_line_ids: set) -> dict:
     """``{job_line_pk: performed_at}`` for the latest transition on each
     line — same DISTINCT ON shape as ``_last_movers``, over
     ``idx_job_line_transitions_line``.

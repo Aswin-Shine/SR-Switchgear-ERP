@@ -14,6 +14,7 @@ from apps.pipeline.selectors import (
     available_actions,
     available_actions_bulk,
     board_visible_lines,
+    last_transition_at,
     stages_for_module,
     transition_history,
 )
@@ -35,7 +36,12 @@ def serialize_stage(stage: Stage) -> dict:
     }
 
 
-def serialize_board_line(line: JobLine, actions: list[dict], quotation: dict | None = None) -> dict:
+def serialize_board_line(
+    line: JobLine,
+    actions: list[dict],
+    quotation: dict | None = None,
+    stage_entered_at=None,
+) -> dict:
     return {
         "id": str(line.id),
         "line_no": line.line_no,
@@ -43,6 +49,11 @@ def serialize_board_line(line: JobLine, actions: list[dict], quotation: dict | N
         "quantity": line.quantity,
         "line_status": line.line_status,
         "required_by": iso(line.required_by),
+        # When the line's current stage was entered — its most recent transition's
+        # performed_at. None on job_line_detail (not passed there): that page already
+        # shows the full transition history, so a redundant "time in stage" stat isn't
+        # needed the way it is on the dense board.
+        "stage_entered_at": iso(stage_entered_at) if stage_entered_at else None,
         "product_category": {
             "code": str(line.product_category.code),
             "name": line.product_category.name,
@@ -87,8 +98,10 @@ def board(request: HttpRequest) -> JsonResponse:
     """Every open job line, grouped by the stage it sits at.
 
     The whole board in a constant number of queries: one for the stages, one
-    for the lines, and three inside ``available_actions_bulk``. Computing the
-    actions per line would be an N+1 across the entire factory's work.
+    for the lines, three inside ``available_actions_bulk``, and one more for
+    ``last_transition_at`` (the board's per-line "time in stage" stat).
+    Computing any of this per line would be an N+1 across the entire
+    factory's work.
 
     A line whose stage has ``board_hide_after_hours`` set (CANCELLED, 3
     hours as of pipeline migration 0007) drops out of the result once that
@@ -123,6 +136,7 @@ def board(request: HttpRequest) -> JsonResponse:
     lines = board_visible_lines(list(lines_qs))
 
     actions = available_actions_bulk(request.user, lines)
+    entered_at = last_transition_at({line.pk for line in lines})
 
     quotations: dict = {}
     if has_permission(request.user, constants.RES_QUOTATION, "view"):
@@ -131,7 +145,12 @@ def board(request: HttpRequest) -> JsonResponse:
     by_stage: dict = {stage.id: [] for stage in columns}
     for line in lines:
         by_stage.setdefault(line.current_stage_id, []).append(
-            serialize_board_line(line, actions.get(line.pk, []), quotations.get(line.job_card_id))
+            serialize_board_line(
+                line,
+                actions.get(line.pk, []),
+                quotations.get(line.job_card_id),
+                entered_at.get(line.pk),
+            )
         )
 
     return ok(

@@ -216,6 +216,29 @@ def test_sales_cannot_see_another_reps_job_card(signed_in, card):
 
 
 @pytest.mark.django_db
+def test_the_active_status_filter_matches_the_dashboards_definition_of_open(signed_in, sales, card):
+    """The list's "Active" filter and the Dashboard's "My open job cards" must agree —
+    previously the list's default filtered on the literal `open` status alone, silently
+    excluding `quoted`/`rework` cards the Dashboard already counted as open."""
+    quoted = JobCardFactory(owner_user=sales, lifecycle_status=JobLifecycleStatus.QUOTED)
+    rework = JobCardFactory(owner_user=sales, lifecycle_status=JobLifecycleStatus.REWORK)
+    won = JobCardFactory(owner_user=sales, lifecycle_status=JobLifecycleStatus.WON)
+
+    listed = body(signed_in.get("/api/v1/job-cards?status=active"))
+    listed_ids = {item["id"] for item in listed["items"]}
+
+    assert card["id"] in listed_ids  # freshly created -> lifecycle_status=open
+    assert str(quoted.id) in listed_ids
+    assert str(rework.id) in listed_ids
+    assert str(won.id) not in listed_ids
+
+    literal_open = body(signed_in.get("/api/v1/job-cards?status=open"))
+    literal_open_ids = {item["id"] for item in literal_open["items"]}
+    assert card["id"] in literal_open_ids
+    assert str(quoted.id) not in literal_open_ids
+
+
+@pytest.mark.django_db
 def test_dispatch_policy_can_be_overridden_over_the_api(signed_in):
     target = ClientFactory(
         client_code="OVERRIDECO", default_dispatch_policy=DispatchPolicy.PARTIAL_ALLOWED
@@ -786,6 +809,28 @@ def test_the_pdf_endpoint_redirects_instead_of_proxying_the_bytes(signed_in, car
     assert response["Location"]
     # The bytes did not come through Django.
     assert not response.content
+
+
+@pytest.mark.django_db
+def test_the_pdf_download_shows_a_client_identifiable_filename(signed_in, card, accountant):
+    """The redirect target's filename must say which job card and revision
+    this is — not the quotation number (meaningless to the client) or the
+    storage-key UUID."""
+    signed_in.force_login(accountant)
+    quotation = body(
+        signed_in.post(
+            f"/api/v1/job-cards/{card['id']}/quotations", data={"pdf": a_pdf()}
+        )
+    )
+
+    response = signed_in.get(f"/api/v1/quotations/{quotation['id']}/pdf")
+    assert card["job_no"] in response["Location"]
+    # get_valid_filename() turns the space in "Rev 0" into an underscore.
+    assert f"Rev_{quotation['revision_no']}" in response["Location"]
+
+    download = signed_in.get(response["Location"])
+    assert card["job_no"] in download["Content-Disposition"]
+    assert f"Rev_{quotation['revision_no']}" in download["Content-Disposition"]
 
 
 @pytest.mark.django_db

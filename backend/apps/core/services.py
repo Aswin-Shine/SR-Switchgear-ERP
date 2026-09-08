@@ -17,6 +17,8 @@ from pathlib import PurePosixPath
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
+from django.urls import reverse
+from django.utils.text import get_valid_filename
 
 from apps.core.db import audit_actor
 from apps.core.exceptions import RuleViolation
@@ -82,13 +84,41 @@ def upload_document(actor, upload: UploadedFile) -> Document:
         )
 
 
-def document_url(document: Document, expires: int = 900) -> str:
+def document_url(
+    document: Document, *, download_name: str | None = None, expires: int = 900
+) -> str:
     """A URL the browser can fetch the bytes from.
 
     On S3/MinIO this is a time-limited signed URL, which is why quotation PDFs
     are served as a 302 to storage rather than proxied through gunicorn: a
     worker tied up streaming a 4MB PDF is a worker not serving requests.
+
+    ``download_name``, when given, is what the browser shows as the
+    filename/tab title — the storage key itself stays an opaque UUID (see
+    ``_safe_key``) regardless, so a caller with real business context (a
+    quotation number and client name, say) can hand it over instead of
+    leaving the user staring at a meaningless UUID.pdf with no way to tell
+    which client it's for.
     """
+    if download_name:
+        safe_name = get_valid_filename(download_name)
+        if settings.STORAGE_BACKEND == "s3":
+            # Signed into the presigned URL itself — S3 serves the friendly
+            # name directly, no bytes touch this process either way.
+            return default_storage.url(
+                document.storage_key,
+                expire=expires,
+                parameters={"ResponseContentDisposition": f'inline; filename="{safe_name}"'},
+            )
+        # FileSystemStorage has no per-request header hook, so the friendly
+        # name is served through a small dedicated view instead of the raw
+        # /media/<key> path django.views.static.serve exposes (config/urls.py)
+        # — same trust model (the URL is the delivery mechanism, not a new
+        # authorisation boundary), just a Content-Disposition worth reading.
+        return reverse(
+            "document-download", kwargs={"document_id": document.id, "filename": safe_name}
+        )
+
     # S3Storage.url() takes an expiry; FileSystemStorage.url() does not and
     # raises TypeError if handed one. Development runs on the filesystem
     # backend, so this has to work on both.

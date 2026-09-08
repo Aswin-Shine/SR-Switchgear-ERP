@@ -1,10 +1,12 @@
 """Root URL configuration.
 
-Three delivery surfaces, per D1 / FRONTEND_PLAN.md:
+Four delivery surfaces, per D1 / FRONTEND_PLAN.md:
 
 * ``/admin/``  — Django admin for HR, roles, permissions, masters, audit log.
 * ``/api/v1/`` — hand-written JSON views for the React SPA. No DRF.
 * ``/login/``  — server-rendered login and password change.
+* ``/print/``  — server-rendered, print-only pages (e.g. a job card) — same
+  reasoning as ``/login/``: fidelity matters more here than SPA reuse.
 """
 
 from django.conf import settings
@@ -18,6 +20,7 @@ urlpatterns = [
     path("healthz/", core_views.healthz, name="healthz"),
     path("admin/", admin.site.urls),
     path("api/v1/", include(("config.api_urls", "api"), namespace="api")),
+    path("print/", include("apps.sales.urls")),
     path("", include("apps.identity.urls")),
 ]
 
@@ -33,4 +36,13 @@ urlpatterns = [
 if settings.STORAGE_BACKEND == "filesystem":
     urlpatterns += [
         path("media/<path:path>", serve_media, {"document_root": str(settings.MEDIA_ROOT)}),
+        # apps.core.services.document_url()'s friendly-filename path for this
+        # same filesystem fallback — a real name in Content-Disposition
+        # instead of the raw storage-key UUID django.views.static.serve
+        # above would otherwise show.
+        path(
+            "media-download/<uuid:document_id>/<str:filename>",
+            core_views.document_download,
+            name="document-download",
+        ),
     ]

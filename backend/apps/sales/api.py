@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
+from pathlib import PurePosixPath
 
 from django.db.models import Count, Q
 from django.http import HttpRequest, HttpResponseRedirect, JsonResponse
@@ -366,9 +367,17 @@ def attachment_download(request: HttpRequest, attachment_id) -> HttpResponseRedi
     on every request, before handing out the signed URL — the URL is the
     delivery mechanism, not the authorisation.
     """
-    attachment = get_object_or_404(JobAttachment, pk=attachment_id)
+    attachment = get_object_or_404(
+        JobAttachment.objects.select_related("job_card", "job_card__client", "document"),
+        pk=attachment_id,
+    )
     require_permission(request.user, constants.RES_JOB_CARD, "view", obj=attachment.job_card)
-    return HttpResponseRedirect(document_url(attachment.document))
+
+    extension = PurePosixPath(attachment.document.original_filename or "").suffix
+    download_name = (
+        f"{attachment.job_card.job_no} - {attachment.job_card.client.legal_name}{extension}"
+    )
+    return HttpResponseRedirect(document_url(attachment.document, download_name=download_name))
 
 
 def _optional_line(card: JobCard, line_id) -> JobLine | None:
@@ -448,12 +457,20 @@ def quotation_pdf(request: HttpRequest, quotation_id):
     if quotation.pdf_document_id is None:
         raise NotFound("That quotation has no PDF attached.")
 
-    return HttpResponseRedirect(document_url(quotation.pdf_document))
+    download_name = (
+        f"{quotation.job_card.job_no} Rev {quotation.revision_no} - "
+        f"{quotation.job_card.client.legal_name}.pdf"
+    )
+    return HttpResponseRedirect(
+        document_url(quotation.pdf_document, download_name=download_name)
+    )
 
 
 def _get_quotation(quotation_id) -> Quotation:
     return get_object_or_404(
-        Quotation.objects.select_related("job_card", "pdf_document", "prepared_by"),
+        Quotation.objects.select_related(
+            "job_card", "job_card__client", "pdf_document", "prepared_by"
+        ),
         pk=quotation_id,
     )
 

@@ -2,9 +2,32 @@
 
 from __future__ import annotations
 
+from django.core.files.storage import default_storage
 from django.db import connection
-from django.http import HttpRequest, JsonResponse
+from django.http import FileResponse, HttpRequest, JsonResponse
+from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import never_cache
+
+from apps.core.models import Document
+
+
+@never_cache
+def document_download(request: HttpRequest, document_id, filename: str) -> FileResponse:
+    """Filesystem-storage fallback so a download shows a real filename
+    instead of the opaque storage-key UUID.
+
+    Same trust model as ``django.views.static.serve`` at ``/media/<path>``
+    (see ``config/urls.py`` — this route only exists when
+    ``STORAGE_BACKEND=filesystem``): the URL itself is the delivery
+    mechanism, not a new authorisation boundary — permission was already
+    checked by whichever API view called ``apps.core.services.document_url``
+    to produce it. ``filename`` is purely a display hint for
+    Content-Disposition; ``FileResponse`` encodes it safely regardless of
+    its contents, so there's nothing to sanitise further here.
+    """
+    document = get_object_or_404(Document, pk=document_id)
+    file = default_storage.open(document.storage_key, "rb")
+    return FileResponse(file, filename=filename, content_type=document.mime_type)
 
 
 @never_cache

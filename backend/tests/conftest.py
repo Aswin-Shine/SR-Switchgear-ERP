@@ -12,10 +12,31 @@ import pytest
 from django.apps import apps as django_apps
 from django.db import connection
 
-#: The data migrations that seed reference data, in dependency order.
+#: Every data migration that seeds reference data (roles, the permission
+#: grid, the pipeline stage graph, transition rules), in dependency order —
+#: NOT migrations that one-time-correct real business rows (employee_code/
+#: client_code renumbering, the quotation-status reclassification, the
+#: rework backfill): those operate on rows a fresh test database never has,
+#: and must not be re-run here. Each entry is a module path whose
+#: ``seed(apps, schema_editor)`` function gets re-run, or a
+#: ``(module_path, function_name)`` pair for the one migration that names
+#: its seed function something else.
 _SEED_MIGRATIONS = (
     "apps.identity.migrations.0002_roles_and_permission_grid",
+    "apps.identity.migrations.0003_user_account_view_permission",
+    "apps.identity.migrations.0004_employee_delete_permission",
+    "apps.identity.migrations.0005_accounts_quotation_create_permission",
+    "apps.identity.migrations.0006_admin_hr_client_create_permission",
+    "apps.identity.migrations.0007_sales_loses_quotation_create_permission",
+    "apps.identity.migrations.0008_sales_job_visibility_scoped_to_owner",
+    "apps.identity.migrations.0009_remove_quotation_approve_and_share_permissions",
     "apps.pipeline.migrations.0003_sales_stage_graph",
+    "apps.pipeline.migrations.0004_accounts_negotiate_permission",
+    ("apps.pipeline.migrations.0005_negotiate_requires_quotation_pdf", "set_condition"),
+    "apps.pipeline.migrations.0006_merge_negotiation_into_quotation",
+    "apps.pipeline.migrations.0007_cancelled_hides_from_board_after_3_hours",
+    "apps.pipeline.migrations.0008_cancelled_and_lost_cascade_job_card_status",
+    "apps.pipeline.migrations.0009_confirmed_cascades_job_card_to_won",
 )
 
 
@@ -29,8 +50,9 @@ def seed_reference_data() -> None:
     ships. ``apps.get_model`` resolves against the live registry, which is what
     the seed functions use.
     """
-    for module_path in _SEED_MIGRATIONS:
-        importlib.import_module(module_path).seed(django_apps, None)
+    for entry in _SEED_MIGRATIONS:
+        module_path, func_name = entry if isinstance(entry, tuple) else (entry, "seed")
+        getattr(importlib.import_module(module_path), func_name)(django_apps, None)
 
 
 def pytest_collection_modifyitems(items):
