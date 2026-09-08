@@ -288,6 +288,7 @@
 .field__hint {
   font-size: var(--t-sm);
   color: var(--c-text-faint);
+  max-width: 60ch;
 }
 
 /* "from client default" — visible, and it clears the moment the user overrides. */

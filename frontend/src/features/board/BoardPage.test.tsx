@@ -134,7 +134,7 @@ describe("BoardPage", () => {
       jobLine({
         id: "l-2",
         description: "Bus duct run",
-        quotation: { quotation_no: "QT-2026-00001", revision_no: 2, status: "sent" },
+        quotation: { quotation_no: "QT-2026-JAN-00001", revision_no: 2, status: "sent" },
       }),
     ];
     stubBoard(payload);

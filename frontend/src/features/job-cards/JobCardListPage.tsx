@@ -128,7 +128,7 @@ function Filters({
           placeholder={strings.filterClientAll}
           options={(clients.data?.items ?? []).map((client) => ({
             value: client.id,
-            label: client.legal_name,
+            label: strings.clientOption(client.legal_name, client.client_code),
           }))}
           onChange={(event) => onChange("client", event.target.value)}
         />
@@ -168,7 +168,12 @@ function JobCardTable({ rows, mine }: { rows: JobCardSummary[]; mine: boolean })
         {
           key: "client",
           header: strings.colClient,
-          render: (row) => <Link to={`/clients/${row.client.id}`}>{row.client.legal_name}</Link>,
+          render: (row) => (
+            <>
+              <Link to={`/clients/${row.client.id}`}>{row.client.legal_name}</Link>{" "}
+              <span className="faint mono">{row.client.client_code}</span>
+            </>
+          ),
         },
         {
           key: "status",

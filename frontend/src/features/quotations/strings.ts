@@ -5,6 +5,10 @@ export const strings = {
   revision: (n: number) => `Rev ${n}`,
   superseded: "Superseded",
   validTill: "Valid till",
+  /** A cancelled/lost card's quotations keep whatever valid-till date they were
+   * issued with — often still in the future — which reads as "still actionable"
+   * unless the row itself says the card that owns it is closed. */
+  validTillClosed: "— card closed",
   amount: "Amount",
   covers: (count: number) => `${count} ${count === 1 ? "line" : "lines"}`,
   openPdf: "Open PDF",

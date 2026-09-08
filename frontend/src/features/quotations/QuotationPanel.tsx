@@ -56,7 +56,7 @@ export function QuotationPanel({
               <ol className="stack stack--tight">
                 {rows.map((quotation) => (
                   <li key={quotation.id}>
-                    <RevisionRow quotation={quotation} />
+                    <RevisionRow quotation={quotation} cardIsDead={cardIsDead} />
                   </li>
                 ))}
               </ol>
@@ -76,7 +76,7 @@ export function QuotationPanel({
   );
 }
 
-function RevisionRow({ quotation }: { quotation: Quotation }) {
+function RevisionRow({ quotation, cardIsDead }: { quotation: Quotation; cardIsDead: boolean }) {
   return (
     <div className={cx("revision", quotation.status === "superseded" && "revision--superseded")}>
       <span className="revision__no">{strings.revision(quotation.revision_no)}</span>
@@ -84,6 +84,7 @@ function RevisionRow({ quotation }: { quotation: Quotation }) {
       <Money value={quotation.quoted_amount} />
       <span className="muted">
         {strings.validTill} <DateText value={quotation.valid_till} />
+        {cardIsDead ? ` ${strings.validTillClosed}` : null}
       </span>
 
       <span className="revision__spacer" />

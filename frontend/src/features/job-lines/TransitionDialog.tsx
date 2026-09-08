@@ -75,7 +75,10 @@ export function TransitionDialog({ line, currentStage, action, onClose }: Transi
   return (
     <Dialog
       open
-      title={strings.moveTitle(humanizeCode(action.action_code))}
+      title={strings.moveTitle(
+        humanizeCode(action.action_code),
+        strings.lineOf(line.job_card.job_no, line.line_no),
+      )}
       onClose={mutation.isPending ? () => undefined : onClose}
       footer={
         <>

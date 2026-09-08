@@ -2,7 +2,7 @@ import { humanizeCode } from "@/lib/format";
 
 /** User-facing text for job lines. One file per feature, so a Hindi pass has one place to work. */
 export const strings = {
-  moveTitle: (action: string) => `${action}`,
+  moveTitle: (action: string, line: string) => `${action} — ${line}`,
   moveFrom: "Currently at",
   moveTo: "Moves to",
   noteLabel: "Note",

@@ -100,7 +100,7 @@ describe("NewJobCardPage", () => {
     const { calls } = stubReference({
       "POST /api/v1/job-cards": {
         id: "jc-9",
-        job_no: "JOB-2026-0009",
+        job_no: "JOB-2026-JAN-0009",
         client: { id: client.id, client_code: client.client_code, legal_name: client.legal_name },
         client_contact: null,
         owner_user: { id: "u-1", username: "rmenon" },
@@ -210,7 +210,7 @@ describe("NewJobCardPage", () => {
     const { calls } = stubReference({
       "POST /api/v1/job-cards": {
         id: "jc-1",
-        job_no: "JOB-2026-0001",
+        job_no: "JOB-2026-JAN-0001",
         client: { id: client.id, client_code: client.client_code, legal_name: client.legal_name },
         client_contact: null,
         owner_user: { id: "u-1", username: "rmenon" },

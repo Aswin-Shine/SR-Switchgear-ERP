@@ -13,6 +13,10 @@ export const strings = {
   filterStatusActive: "Active",
   filterClient: "Client",
   filterClientAll: "All clients",
+  /** Client legal names aren't unique (client_code is what's actually unique) —
+   * both the filter's options and the list's own Client column need the code
+   * alongside the name, or two same-named clients are indistinguishable. */
+  clientOption: (legalName: string, code: string) => `${legalName} — ${code}`,
   search: "Search",
   searchPlaceholder: "Job no, title, client",
   emptyList: "No job cards match these filters.",

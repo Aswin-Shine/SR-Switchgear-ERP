@@ -297,7 +297,7 @@ export function initialState(): FixtureState {
     {
       id: "jl-1",
       job_card_id: "jc-1",
-      job_no: "JOB-2026-0001",
+      job_no: "JOB-2026-JAN-0001",
       client: "Tata Projects, Chennai",
       dispatch_policy: "complete_only",
       line_no: 1,
@@ -316,7 +316,7 @@ export function initialState(): FixtureState {
     {
       id: "jl-2",
       job_card_id: "jc-1",
-      job_no: "JOB-2026-0001",
+      job_no: "JOB-2026-JAN-0001",
       client: "Tata Projects, Chennai",
       dispatch_policy: "complete_only",
       line_no: 2,
@@ -336,7 +336,7 @@ export function initialState(): FixtureState {
     {
       id: "jl-3",
       job_card_id: "jc-2",
-      job_no: "JOB-2026-0002",
+      job_no: "JOB-2026-JAN-0002",
       client: "Kerala State Electricity Board",
       dispatch_policy: "partial_allowed",
       line_no: 1,
@@ -356,7 +356,7 @@ export function initialState(): FixtureState {
     {
       id: "jl-4",
       job_card_id: "jc-3",
-      job_no: "JOB-2026-0003",
+      job_no: "JOB-2026-JAN-0003",
       client: "Tata Projects, Chennai",
       dispatch_policy: "complete_only",
       line_no: 1,
@@ -371,7 +371,7 @@ export function initialState(): FixtureState {
     {
       id: "jl-5",
       job_card_id: "jc-3",
-      job_no: "JOB-2026-0003",
+      job_no: "JOB-2026-JAN-0003",
       client: "Tata Projects, Chennai",
       dispatch_policy: "complete_only",
       line_no: 2,
@@ -395,7 +395,7 @@ export function initialState(): FixtureState {
     cards: [
       {
         id: "jc-1",
-        job_no: "JOB-2026-0001",
+        job_no: "JOB-2026-JAN-0001",
         client: { id: "cl-1", client_code: "TATA-CH", legal_name: "Tata Projects, Chennai" },
         client_contact: clients[0]?.contacts[0]
           ? {
@@ -419,7 +419,7 @@ export function initialState(): FixtureState {
       },
       {
         id: "jc-2",
-        job_no: "JOB-2026-0002",
+        job_no: "JOB-2026-JAN-0002",
         client: { id: "cl-2", client_code: "KSEB", legal_name: "Kerala State Electricity Board" },
         client_contact: clients[1]?.contacts[0]
           ? {
@@ -440,7 +440,7 @@ export function initialState(): FixtureState {
       },
       {
         id: "jc-3",
-        job_no: "JOB-2026-0003",
+        job_no: "JOB-2026-JAN-0003",
         client: { id: "cl-1", client_code: "TATA-CH", legal_name: "Tata Projects, Chennai" },
         client_contact: null,
         owner_user: { id: "u-1", username: "rmenon" },

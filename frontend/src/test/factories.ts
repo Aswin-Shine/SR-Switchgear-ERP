@@ -40,7 +40,7 @@ export function jobLine(overrides: Partial<JobLineSummary> = {}): JobLineSummary
     stage_entered_at: "2026-04-20T09:00:00Z",
     job_card: {
       id: "card-1",
-      job_no: "JOB-2026-0007",
+      job_no: "JOB-2026-JAN-0007",
       client: "Acme Switchgear",
       dispatch_policy: "partial_allowed",
     },

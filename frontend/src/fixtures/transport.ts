@@ -52,6 +52,22 @@ export function fixtureState(): FixtureState {
 
 const LATENCY_MS = import.meta.env.MODE === "test" ? 0 : 140;
 
+// Mirrors apps.core.numbering.MONTH_ABBR — the real job number's month segment.
+const MONTH_ABBR = [
+  "JAN",
+  "FEB",
+  "MAR",
+  "APR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AUG",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DEC",
+];
+
 function settle<T>(value: T): Promise<T> {
   if (LATENCY_MS === 0) return Promise.resolve(value);
   return new Promise((resolve) => setTimeout(() => resolve(value), LATENCY_MS));
@@ -322,7 +338,8 @@ function createJobCard(body: unknown): JobCardSummary {
 
   const number = state.cards.length + 1;
   const cardId = id("jc");
-  const jobNo = `JOB-2026-${String(number).padStart(4, "0")}`;
+  const month = MONTH_ABBR[new Date().getMonth()];
+  const jobNo = `JOB-2026-${month}-${String(number).padStart(4, "0")}`;
   const contact =
     client.contacts.find((candidate) => candidate.id === payload.client_contact) ?? null;
 
