@@ -45,6 +45,21 @@ export function Modal({
     return () => element.removeEventListener("close", handleClose);
   }, [onClose]);
 
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    // Escape fires `cancel` before the native close. Left alone, the browser closes the
+    // dialog regardless of what onClose does — bypassing every caller's "not while a
+    // mutation is pending" guard. Routing it through the same onClose the close button
+    // uses keeps one path deciding whether dismissal actually happens.
+    const handleCancel = (event: Event) => {
+      event.preventDefault();
+      onClose();
+    };
+    element.addEventListener("cancel", handleCancel);
+    return () => element.removeEventListener("cancel", handleCancel);
+  }, [onClose]);
+
   const content = (
     <>
       <div className="dialog__head">

@@ -23,7 +23,15 @@ export function JobLinePage() {
             title={strings.lineOf(data.job_card.job_no, data.line_no)}
             subtitle={data.description}
             actions={
-              <LineActions line={data} currentStage={data.current_stage} size="md" showEmpty />
+              <>
+                {/* Print stays server-rendered, same as the job card detail page's own
+                    "Print job card" link — a line has no print view of its own, this
+                    just gets you to its parent card's. */}
+                <a className="btn" href={`/print/job-card/${data.job_card.job_no}`}>
+                  {strings.print}
+                </a>
+                <LineActions line={data} currentStage={data.current_stage} size="md" showEmpty />
+              </>
             }
           />
 

@@ -48,7 +48,7 @@ function renderPanel(payload: Me, extra: Record<string, unknown> = {}) {
   });
   const result = renderWithProviders(
     <SessionProvider>
-      <AttachmentsPanel jobCardId="jc-1" />
+      <AttachmentsPanel jobCardId="jc-1" cardIsDead={false} />
     </SessionProvider>,
   );
   return { ...result, calls };

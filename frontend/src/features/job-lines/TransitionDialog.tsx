@@ -83,7 +83,9 @@ export function TransitionDialog({ line, currentStage, action, onClose }: Transi
             {strings.cancel}
           </Button>
           <Button
-            variant="primary"
+            variant={
+              action.to_stage?.cascades_job_card_status === "cancelled" ? "danger" : "primary"
+            }
             onClick={submit}
             disabled={noteMissing}
             loading={mutation.isPending}

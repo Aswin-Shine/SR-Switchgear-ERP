@@ -133,6 +133,9 @@ function toBoardLine(line: FixtureLine): JobLineSummary {
     quantity: line.quantity,
     line_status: line.line_status,
     required_by: line.required_by,
+    // Fixture data has no real transition history to derive this from — a fixed
+    // plausible recent date, just so the board's age indicator has something to show.
+    stage_entered_at: "2026-08-25T09:00:00Z",
     product_category: line.product_category,
     job_card: {
       id: line.job_card_id,

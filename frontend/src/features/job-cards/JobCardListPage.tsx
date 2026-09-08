@@ -15,7 +15,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Table } from "@/components/Table";
 import { useId } from "react";
 import { Link, useSearchParams } from "react-router";
-import { DEFAULT_JOB_CARD_FILTERS, OWNER_ME } from "./filters";
+import { DEFAULT_JOB_CARD_FILTERS, OWNER_ME, STATUS_ACTIVE } from "./filters";
 import { strings } from "./strings";
 
 export function JobCardListPage() {
@@ -113,7 +113,10 @@ function Filters({
           id={ids.status}
           value={status ?? ""}
           placeholder={strings.filterStatusAll}
-          options={statuses}
+          // "Active" isn't a real lifecycle_status — it's the same open/quoted/rework
+          // set the Dashboard's "My open job cards" already uses (see filters.ts). The
+          // real enum values follow it unchanged, still sourced from GET /enums.
+          options={[{ value: STATUS_ACTIVE, label: strings.filterStatusActive }, ...statuses]}
           onChange={(event) => onChange("status", event.target.value)}
         />
       </Field>

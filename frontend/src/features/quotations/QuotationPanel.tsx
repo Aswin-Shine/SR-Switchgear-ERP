@@ -16,9 +16,14 @@ import { strings } from "./strings";
 export function QuotationPanel({
   jobCardId,
   lines,
+  cardIsDead,
 }: {
   jobCardId: string;
   lines: JobLine[];
+  /** True once the job card is cancelled or lost — nothing productive follows from
+   * quoting a dead enquiry, so the action that would encourage it is gated here
+   * rather than only after a real submission bounces off the server. */
+  cardIsDead: boolean;
 }) {
   const quotations = useQuotations(jobCardId);
   const { can } = useSession();
@@ -29,12 +34,18 @@ export function QuotationPanel({
       <div className="panel__head">
         <h2 className="panel__title">{strings.title}</h2>
         <span className="panel__count">{quotations.data?.length ?? 0}</span>
-        {can(RESOURCE.quotation, ACTION.create) && lines.length > 0 ? (
+        {can(RESOURCE.quotation, ACTION.create) && lines.length > 0 && !cardIsDead ? (
           <Button size="sm" variant="primary" onClick={() => setUploading(true)}>
             {strings.newRevision}
           </Button>
         ) : null}
       </div>
+
+      {cardIsDead ? (
+        <div className="panel__body">
+          <p className="faint">{strings.cardIsDeadNotice}</p>
+        </div>
+      ) : null}
 
       <div className="panel__body">
         <QueryState query={quotations} skeletonRows={2}>

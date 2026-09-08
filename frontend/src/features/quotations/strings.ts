@@ -15,6 +15,11 @@ export const strings = {
   amountLabel: "Quoted amount (₹)",
   amountHint: "Exactly as quoted, in rupees.",
   validTillLabel: "Valid till",
+  /** See job-cards/strings.ts::dateConfirm for the full reasoning — a static format
+   * hint risks contradicting the native picker's own locale rendering, so this shows
+   * the actual selected value instead, already correctly formatted. Duplicated here
+   * since each feature owns its own strings module. */
+  dateConfirm: (formatted: string) => `Selected: ${formatted}`,
   coveredLines: "Lines this quotation covers",
   coveredLinesHint: "At least one. Lines not covered stay where they are.",
   supersedeNote: "Uploading creates the next revision and supersedes the current one.",
@@ -26,4 +31,5 @@ export const strings = {
   fileRequired: "Choose the quotation PDF.",
   amountRequired: "Enter the quoted amount.",
   linesRequired: "Select at least one line.",
+  cardIsDeadNotice: "This job card is closed — no new revisions can be uploaded.",
 } as const;

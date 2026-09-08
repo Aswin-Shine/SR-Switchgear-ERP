@@ -38,9 +38,20 @@ export function LineActions({
           <Button
             key={action.action_code}
             size={size}
-            variant={action.to_stage ? "default" : "ghost"}
+            variant={
+              // Cancel (an administrative override) gets the alarming treatment; Lose
+              // and Won (routine, if final, commercial outcomes) don't — both are
+              // "terminal", but only one is a kill switch.
+              action.to_stage?.cascades_job_card_status === "cancelled"
+                ? "danger"
+                : action.to_stage
+                  ? "default"
+                  : "ghost"
+            }
             disabled={!action.available}
-            title={action.blocked_by ? strings.blockedReason(action.blocked_by) : undefined}
+            disabledReason={
+              action.blocked_by ? strings.blockedReason(action.blocked_by) : undefined
+            }
             onClick={() => setPending(action)}
           >
             {humanizeCode(action.action_code)}

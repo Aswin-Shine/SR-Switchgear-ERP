@@ -25,7 +25,15 @@ function formatSize(bytes: number): string {
   return `${(kb / BYTES_IN_KB).toFixed(1)} MB`;
 }
 
-export function AttachmentsPanel({ jobCardId }: { jobCardId: string }) {
+export function AttachmentsPanel({
+  jobCardId,
+  cardIsDead,
+}: {
+  jobCardId: string;
+  /** True once the job card is cancelled or lost. Existing attachments stay
+   * downloadable — only new uploads are gated off. */
+  cardIsDead: boolean;
+}) {
   const attachments = useJobCardAttachments(jobCardId);
   const upload = useUploadAttachment(jobCardId);
   const remove = useRemoveAttachment(jobCardId);
@@ -60,7 +68,9 @@ export function AttachmentsPanel({ jobCardId }: { jobCardId: string }) {
       </div>
 
       <div className="panel__body">
-        {can(RESOURCE.document, ACTION.create) ? (
+        {cardIsDead ? <p className="faint">{strings.attachmentCardIsDeadNotice}</p> : null}
+
+        {can(RESOURCE.document, ACTION.create) && !cardIsDead ? (
           <div className="stack stack--tight">
             <label className="field__label" htmlFor={inputId}>
               {upload.isPending ? strings.attachmentUploading : strings.attachmentAdd}

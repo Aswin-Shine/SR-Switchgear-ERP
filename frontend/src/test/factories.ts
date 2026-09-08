@@ -37,6 +37,7 @@ export function jobLine(overrides: Partial<JobLineSummary> = {}): JobLineSummary
     quantity: 2,
     line_status: "active",
     required_by: "2026-05-01",
+    stage_entered_at: "2026-04-20T09:00:00Z",
     job_card: {
       id: "card-1",
       job_no: "JOB-2026-0007",

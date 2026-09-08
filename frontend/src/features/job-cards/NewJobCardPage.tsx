@@ -11,6 +11,7 @@ import { PageHead } from "@/components/PageHead";
 import { errorMessage } from "@/components/QueryState";
 import { Select } from "@/components/Select";
 import { useToast } from "@/components/Toast";
+import { formatDate } from "@/lib/format";
 import { useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useId, useState } from "react";
 import { useNavigate } from "react-router";
@@ -253,7 +254,12 @@ export function NewJobCardPage() {
             />
           </Field>
 
-          <Field label={strings.enquiryDate} htmlFor={ids.enquiryDate} required>
+          <Field
+            label={strings.enquiryDate}
+            htmlFor={ids.enquiryDate}
+            required
+            hint={enquiryDate ? strings.dateConfirm(formatDate(enquiryDate)) : undefined}
+          >
             <input
               id={ids.enquiryDate}
               className="input"
@@ -263,7 +269,11 @@ export function NewJobCardPage() {
             />
           </Field>
 
-          <Field label={strings.requiredBy} htmlFor={ids.requiredBy}>
+          <Field
+            label={strings.requiredBy}
+            htmlFor={ids.requiredBy}
+            hint={requiredBy ? strings.dateConfirm(formatDate(requiredBy)) : undefined}
+          >
             <input
               id={ids.requiredBy}
               className="input"

@@ -22,6 +22,7 @@ export const strings = {
   specsTitle: "Specification",
   specsEmpty: "No specification recorded.",
   lineOf: (jobNo: string, lineNo: number) => `${jobNo} · line ${lineNo}`,
+  print: "Print job card",
   inStageSince: "In this stage since",
   backToCard: "Back to job card",
   /** apps/pipeline/selectors.py::_block_reason's two known codes, explained rather than

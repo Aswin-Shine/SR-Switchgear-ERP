@@ -1,5 +1,5 @@
 import type { JobLineSummary, StageRef } from "@/api/types";
-import { DueDate } from "@/components/DateText";
+import { DueDate, StageAge } from "@/components/DateText";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatQuantity } from "@/lib/format";
 import { Link } from "react-router";
@@ -8,9 +8,8 @@ import { strings } from "./strings";
 
 /** One job line on the board. Dense on purpose: this column replaces a spreadsheet row.
  * currentStage comes from the enclosing column, not the line itself — a board line
- * carries no current_stage of its own (see api/types.ts::JobLineSummary). Likewise the
- * board payload has no per-line stage-entry timestamp and no client id, only its legal
- * name — so there's no "time in stage" indicator here and the client name isn't a link. */
+ * carries no current_stage of its own (see api/types.ts::JobLineSummary), and the
+ * board payload has no client id, only its legal name, so the client name isn't a link. */
 export function LineCard({ line, currentStage }: { line: JobLineSummary; currentStage: StageRef }) {
   return (
     <article className="line-card">
@@ -18,6 +17,7 @@ export function LineCard({ line, currentStage }: { line: JobLineSummary; current
         <Link className="line-card__no" to={`/job-lines/${line.id}`}>
           {line.job_card.job_no}-{line.line_no}
         </Link>
+        {line.stage_entered_at ? <StageAge since={line.stage_entered_at} /> : null}
       </div>
 
       <p className="line-card__desc">{line.description}</p>

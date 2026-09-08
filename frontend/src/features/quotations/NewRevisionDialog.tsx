@@ -5,7 +5,7 @@ import { Dialog } from "@/components/Dialog";
 import { Field } from "@/components/Field";
 import { errorMessage } from "@/components/QueryState";
 import { useToast } from "@/components/Toast";
-import { formatAmountInput, sanitizeAmountInput } from "@/lib/format";
+import { formatAmountInput, formatDate, sanitizeAmountInput } from "@/lib/format";
 import { useId, useLayoutEffect, useRef, useState } from "react";
 import { strings } from "./strings";
 
@@ -152,7 +152,11 @@ export function NewRevisionDialog({
         />
       </Field>
 
-      <Field label={strings.validTillLabel} htmlFor={ids.valid}>
+      <Field
+        label={strings.validTillLabel}
+        htmlFor={ids.valid}
+        hint={validTill ? strings.dateConfirm(formatDate(validTill)) : undefined}
+      >
         <input
           id={ids.valid}
           className="input"

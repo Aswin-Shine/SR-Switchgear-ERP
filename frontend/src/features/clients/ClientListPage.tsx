@@ -42,7 +42,14 @@ export function ClientListPage() {
             />
           </Field>
 
-          <Field label={strings.colStatus} htmlFor={ids.active}>
+          {/* Not <Field>: its own <label for> plus this control's <label for> would both
+              target #active, and two labels on one input is ambiguous across
+              browsers/AT. "Status" is a purely visual caption here — the checkbox is
+              already fully named by the "Active only" label that wraps it. */}
+          <div className="field">
+            <span className="field__label" aria-hidden="true">
+              {strings.colStatus}
+            </span>
             <label className="row" htmlFor={ids.active}>
               <input
                 id={ids.active}
@@ -52,7 +59,7 @@ export function ClientListPage() {
               />
               <span>{strings.activeOnly}</span>
             </label>
-          </Field>
+          </div>
         </div>
 
         <QueryState query={clients} skeletonRows={8}>

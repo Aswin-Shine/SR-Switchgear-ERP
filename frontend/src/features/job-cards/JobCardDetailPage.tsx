@@ -34,7 +34,7 @@ export function JobCardDetailPage() {
               // Print stays server-rendered: fidelity is better. Anyone who can see
               // this page already has job_card:view, which is all print needs too —
               // there's no separate "print" permission in the real grant model.
-              <a className="btn" href={`/print/job-card/${data.id}`}>
+              <a className="btn" href={`/print/job-card/${data.job_no}`}>
                 {strings.print}
               </a>
             }
@@ -53,11 +53,25 @@ export function JobCardDetailPage() {
             <LinesTable lines={data.lines} />
           </section>
 
-          <QuotationPanel jobCardId={data.id} lines={data.lines} />
+          {/* "cancelled"/"lost" is JobLifecycleStatus, the DB-CHECK-pinned status
+              domain this codebase's own architecture rule names as the sanctioned
+              exception to never comparing a status against a literal — computed once
+              here, not repeated in each panel below. */}
+          <QuotationPanel
+            jobCardId={data.id}
+            lines={data.lines}
+            cardIsDead={data.lifecycle_status === "cancelled" || data.lifecycle_status === "lost"}
+          />
 
           <div className="grid-2">
-            <NotesPanel jobCardId={data.id} />
-            <AttachmentsPanel jobCardId={data.id} />
+            <NotesPanel
+              jobCardId={data.id}
+              cardIsDead={data.lifecycle_status === "cancelled" || data.lifecycle_status === "lost"}
+            />
+            <AttachmentsPanel
+              jobCardId={data.id}
+              cardIsDead={data.lifecycle_status === "cancelled" || data.lifecycle_status === "lost"}
+            />
           </div>
         </div>
       )}

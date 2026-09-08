@@ -9,7 +9,16 @@ import { useToast } from "@/components/Toast";
 import { useId, useState } from "react";
 import { strings } from "./strings";
 
-export function NotesPanel({ jobCardId }: { jobCardId: string }) {
+export function NotesPanel({
+  jobCardId,
+  cardIsDead,
+}: {
+  jobCardId: string;
+  /** True once the job card is cancelled or lost. Existing notes stay visible — this
+   * is a communication record, not a production input — but adding new ones is gated
+   * off, the same way the quotation and attachment panels are on a dead card. */
+  cardIsDead: boolean;
+}) {
   const notes = useJobCardNotes(jobCardId);
   const addNote = useAddNote(jobCardId);
   const { can } = useSession();
@@ -35,7 +44,9 @@ export function NotesPanel({ jobCardId }: { jobCardId: string }) {
       </div>
 
       <div className="panel__body">
-        {can(RESOURCE.jobNote, ACTION.create) ? (
+        {cardIsDead ? <p className="faint">{strings.noteCardIsDeadNotice}</p> : null}
+
+        {can(RESOURCE.jobNote, ACTION.create) && !cardIsDead ? (
           <div className="stack stack--tight">
             <label className="visually-hidden" htmlFor={draftId}>
               {strings.addNote}

@@ -184,15 +184,21 @@ function PhoneBoard({ board }: { board: Board }) {
 
   return (
     <div className="stack stack--tight">
-      <div className="stage-tabs" role="tablist" aria-label={strings.stageSelector}>
+      {/* A plain button group, not a tablist: there's no paired tabpanel and no
+          roving-tabindex arrow-key navigation, so claiming role="tab" would promise
+          keyboard behavior this widget doesn't have. aria-pressed on each button is the
+          complete, correct pattern for "which of these is currently selected." A
+          <fieldset>/<legend> is the semantic element for a labelled group of controls —
+          Biome's a11y lint flags role="group" on a bare div for exactly this. */}
+      <fieldset className="stage-tabs">
+        <legend className="visually-hidden">{strings.stageSelector}</legend>
         {columns.map(({ stage, lines }) => {
           const active = stage.id === selected.stage.id;
           return (
             <button
               key={stage.id}
               type="button"
-              role="tab"
-              aria-selected={active}
+              aria-pressed={active}
               className={cx("btn", "btn--sm", active && "btn--primary")}
               onClick={() => setSelectedId(stage.id)}
             >
@@ -200,7 +206,7 @@ function PhoneBoard({ board }: { board: Board }) {
             </button>
           );
         })}
-      </div>
+      </fieldset>
 
       <div className="board board--phone">
         <Column stage={selected.stage} lines={selected.lines} />

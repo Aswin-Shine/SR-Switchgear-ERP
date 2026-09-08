@@ -243,6 +243,8 @@ a:hover {
 
 .page-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--s-2);
   align-items: center;
 }
@@ -270,9 +272,12 @@ a:hover {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--s-4);
-  /* Panels size to their content: an empty Requirements panel should not be as tall as
-     the Enquiry panel beside it. */
-  align-items: start;
+  /* Equal-height row: a paired panel with less content (e.g. an empty
+     Requirements panel) still ends at the same edge as its taller sibling
+     instead of trailing off short — a jagged bottom edge reads as
+     unfinished, not "sized to content." Grid's own stretch default; no
+     visual effect on form-field grids (.field has no visible box to
+     stretch), only on bordered/background panels sitting side by side. */
 }
 
 .grid-cards {

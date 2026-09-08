@@ -7,12 +7,16 @@ export const strings = {
   filterOwnerAll: "Everyone",
   filterStatus: "Status",
   filterStatusAll: "Any status",
+  /** Not a real lifecycle_status — see filters.ts::STATUS_ACTIVE. Matches the
+   * Dashboard's "My open job cards" (open + quoted + rework), not just the single
+   * literal `open` status. */
+  filterStatusActive: "Active",
   filterClient: "Client",
   filterClientAll: "All clients",
   search: "Search",
   searchPlaceholder: "Job no, title, client",
   emptyList: "No job cards match these filters.",
-  emptyListMine: "Nothing open assigned to you.",
+  emptyListMine: "Nothing active assigned to you.",
 
   colJobNo: "Job no",
   colClient: "Client",
@@ -39,7 +43,11 @@ export const strings = {
   addNote: "Add note",
   notePlaceholder: "Add a note for whoever picks this up next",
   noteEmpty: "No notes yet.",
+  noteCardIsDeadNotice:
+    "This job card is closed — the existing notes stay, but no new ones can be added.",
   attachmentEmpty: "Nothing attached.",
+  attachmentCardIsDeadNotice:
+    "This job card is closed — existing attachments stay, but nothing new can be added.",
   attachmentAdd: "Attach a file",
   attachmentUploading: "Uploading…",
   attachmentRemove: "Remove",
@@ -76,6 +84,13 @@ export const strings = {
   sourceNone: "Not recorded",
   enquiryDate: "Enquiry date",
   requiredBy: "Required by",
+  /** Native <input type="date"> renders per the browser's own locale, not this app's
+   * dd/mm/yyyy convention (Chrome ignores the page's lang attribute for this), so a
+   * static "dd/mm/yyyy" hint risks contradicting whatever the picker itself displays —
+   * confirmed live: it does. This shows the actual selected value, already correctly
+   * formatted via formatDate(), so the field states a fact instead of a claim that
+   * might conflict with what's rendered right above it. */
+  dateConfirm: (formatted: string) => `Selected: ${formatted}`,
   dispatchPolicy: "Dispatch policy",
   dispatchPolicyNone: "Not set",
   requirements: "Requirements",

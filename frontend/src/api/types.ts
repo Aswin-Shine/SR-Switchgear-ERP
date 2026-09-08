@@ -129,6 +129,16 @@ export interface StageRef {
   id: string;
   code: string;
   name: string;
+  /** Only present where the server actually sends it (current_stage, to_stage on an
+   * action) — absent on the synthetic StageRef StageTimeline builds from a history
+   * entry's bare code, which never carries this. Treat undefined as "not terminal". */
+  is_terminal?: boolean;
+  /** Mirrors apps.sales.models.JobLifecycleStatus ("won" | "lost" | "cancelled" | ...),
+   * or null when this stage carries no card-level outcome. Same presence caveat as
+   * is_terminal above — only sent on to_stage. Distinguishes a routine outcome (lost)
+   * from an administrative override (cancelled); both are terminal, only one is a
+   * kill switch. */
+  cascades_job_card_status?: string | null;
 }
 
 /** apps/pipeline/api.py::_serialise_action — one entry of `available_actions`,
@@ -209,6 +219,10 @@ export interface JobLineSummary {
   quantity: number;
   line_status: string;
   required_by: string | null;
+  /** When the line entered its current stage — its latest transition's performed_at.
+   * Null on the job-line detail payload (which reuses this same shape but doesn't need
+   * a redundant stat next to its own full history); always present on the board. */
+  stage_entered_at: string | null;
   product_category: ProductCategory;
   job_card: { id: string; job_no: string; client: string; dispatch_policy: string };
   available_actions: ActionOption[];

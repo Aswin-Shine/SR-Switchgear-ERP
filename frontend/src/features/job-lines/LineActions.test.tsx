@@ -20,7 +20,7 @@ describe("LineActions", () => {
     expect(button).not.toHaveAttribute("title");
   });
 
-  it("disables a condition-blocked action and explains why, rather than hiding it", () => {
+  it("disables a condition-blocked action and explains why, rather than hiding it — reachable without a mouse", () => {
     const line = jobLine({
       available_actions: [
         action({ action_code: "negotiate", available: false, blocked_by: "condition" }),
@@ -29,9 +29,15 @@ describe("LineActions", () => {
 
     renderWithProviders(<LineActions line={line} currentStage={enquiry} />);
 
+    // aria-disabled, not native disabled: a native disabled button is dropped from the tab
+    // order in every browser, so its explanation would be unreachable by keyboard/AT.
     const button = screen.getByRole("button", { name: "Negotiate" });
-    expect(button).toBeDisabled();
-    expect(button).toHaveAttribute("title", "Not available yet");
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(button).not.toBeDisabled();
+
+    const reasonId = button.getAttribute("aria-describedby");
+    expect(reasonId).toBeTruthy();
+    expect(document.getElementById(reasonId as string)).toHaveTextContent("Not available yet");
   });
 
   it("explains a self-approval block in its own words", () => {
@@ -43,9 +49,10 @@ describe("LineActions", () => {
 
     renderWithProviders(<LineActions line={line} currentStage={enquiry} />);
 
-    expect(screen.getByRole("button", { name: "Confirm" })).toHaveAttribute(
-      "title",
-      "Needs a second person",
-    );
+    // The reason stays out of the button's own accessible name (still just "Confirm") and
+    // is exposed only as its description, so a screen reader doesn't read it twice.
+    const button = screen.getByRole("button", { name: "Confirm" });
+    const reasonId = button.getAttribute("aria-describedby");
+    expect(document.getElementById(reasonId as string)).toHaveTextContent("Needs a second person");
   });
 });

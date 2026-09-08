@@ -4,6 +4,7 @@
 /* ---------------------------------------------------------------- buttons */
 
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -25,9 +26,46 @@
   background: var(--c-surface-2);
 }
 
-.btn:disabled {
+.btn:disabled,
+.btn[aria-disabled="true"] {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* A blocked action's reason (Button's disabledReason prop). Stays in the accessibility
+   tree at all times via aria-describedby (opacity, never visibility, so screen readers can
+   reach it whether or not it's visually shown) and becomes visible on the same triggers a
+   native title would use for a sighted mouse user, plus focus for keyboard users — a
+   disabled button can't be focused at all, which is exactly the gap this closes. */
+.btn__reason {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  z-index: 40;
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-sm);
+  background: var(--c-text);
+  color: var(--c-surface);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 2px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.btn[aria-disabled="true"]:hover .btn__reason,
+.btn[aria-disabled="true"]:focus-visible .btn__reason {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn__reason {
+    transition: opacity 120ms ease;
+    transform: translateX(-50%);
+  }
 }
 
 .btn--primary {
@@ -286,6 +324,36 @@
 .textarea:disabled {
   background: var(--c-surface-2);
   color: var(--c-text-faint);
+}
+
+/* type="file" renders its "Choose file" button as a separate native widget
+   that .input's background/color/border never reach — left alone it stays
+   the browser's default light button inside an otherwise dark control,
+   the one spot that broke the app's own dark theme. */
+.input[type="file"] {
+  padding: var(--s-1);
+  display: flex;
+  align-items: center;
+}
+
+.input[type="file"]::file-selector-button,
+.input[type="file"]::-webkit-file-upload-button {
+  height: calc(var(--control-h) - 2 * var(--s-1));
+  margin-right: var(--s-2);
+  padding: 0 var(--s-3);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  color: var(--c-text);
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.input[type="file"]:hover::file-selector-button,
+.input[type="file"]:hover::-webkit-file-upload-button {
+  background: var(--c-surface-3);
 }
 
 .input[aria-invalid="true"],
@@ -753,7 +821,12 @@
   display: flex;
   gap: var(--s-1);
   overflow-x: auto;
-  padding-bottom: var(--s-2);
+  /* A <fieldset> for a11y (see BoardPage.tsx) carries a UA-default border/min-width — reset
+     so it renders exactly like the div it replaced. */
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0 0 var(--s-2);
 }
 
 /* -------------------------------------------------------------- timeline */
@@ -839,8 +912,9 @@
 
 .revision {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--s-3);
+  gap: var(--s-2) var(--s-3);
   padding: var(--s-2) var(--s-3);
   border: 1px solid var(--c-border);
   border-radius: var(--r-md);
