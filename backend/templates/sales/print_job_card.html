@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ card.job_no }} — SR Switchgear ERP</title>
+  <style>
+    /* --accent matches the SPA's Signal Blue (frontend/src/styles/tokens.css
+       --c-accent: hsl(222 72% 44%)), same value as base.html, instead of each
+       server-rendered template picking its own hex independently. */
+    :root { --fg:#1a1a1a; --muted:#6b6b6b; --line:#c8c8c4; --accent:#1f50c1; --danger:#bc3824; }
+    * { box-sizing: border-box; }
+    body { margin:0; font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;
+           color:var(--fg); background:#f4f4f2; }
+    .sheet { max-width:52rem; margin:1.5rem auto; padding:2rem 2.25rem;
+             background:#fff; border:1px solid var(--line); }
+    .toolbar { max-width:52rem; margin:1.5rem auto 0; padding:0 2.25rem; }
+    .btn { display:inline-block; padding:.55rem 1.1rem; font:inherit; font-weight:600;
+           color:#fff; background:var(--accent); border:0; border-radius:5px; cursor:pointer; }
+    .head { display:flex; justify-content:space-between; align-items:flex-start;
+            border-bottom:2px solid var(--fg); padding-bottom:1rem; margin-bottom:1.25rem; }
+    .head h1 { margin:0; font-size:1.5rem; }
+    .head .sub { color:var(--muted); margin:.2rem 0 0; }
+    .head .job-no { text-align:right; }
+    .head .job-no .mono { font-size:1.3rem; font-weight:700; }
+    h2 { font-size:.85rem; text-transform:uppercase; letter-spacing:.04em;
+         color:var(--muted); margin:1.5rem 0 .5rem; }
+    dl.kv { display:grid; grid-template-columns:auto 1fr; gap:.3rem 1rem; margin:0; }
+    dl.kv dt { color:var(--muted); }
+    dl.kv dd { margin:0; }
+    table { width:100%; border-collapse:collapse; margin-top:.25rem; }
+    th, td { text-align:left; padding:.45rem .5rem; border-bottom:1px solid var(--line);
+             vertical-align:top; break-inside:avoid; }
+    th { font-size:.75rem; text-transform:uppercase; color:var(--muted); }
+    td.num { text-align:right; }
+    .specs { font-size:.8rem; color:var(--muted); }
+    .quote-box { border:1px solid var(--line); border-radius:5px; padding:.75rem 1rem;
+                 margin-top:.25rem; display:flex; justify-content:space-between; gap:1rem; }
+    .quote-box .amount { font-size:1.1rem; font-weight:700; }
+    .footer { margin-top:2rem; padding-top:.75rem; border-top:1px solid var(--line);
+              font-size:.8rem; color:var(--muted); }
+    .faint { color:var(--muted); }
+    /* The one forcing function against building a dead order: this banner is the
+       first thing on the page, on screen and on paper alike — status text alone
+       (same weight as every other metadata field) was too easy to miss. */
+    .dead-banner { max-width:52rem; margin:1rem auto 0; padding:.65rem 1.25rem;
+                   background:var(--danger); color:#fff; font-weight:700;
+                   text-align:center; letter-spacing:.02em; border-radius:5px; }
+    .status.dead { color:var(--danger); font-weight:700; }
+    @media print {
+      body { background:#fff; }
+      .toolbar { display:none; }
+      .sheet { margin:0; padding:0; border:0; max-width:none; }
+      .dead-banner { margin:0 0 .75rem; border-radius:0; max-width:none; }
+      @page { margin:1.5cm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button class="btn" id="print-btn" type="button">Print</button>
+  </div>
+
+  {% if is_dead %}
+    <div class="dead-banner">This job card is {{ card.get_lifecycle_status_display|upper }} — do not proceed with production</div>
+  {% endif %}
+
+  <div class="sheet">
+    <div class="head">
+      <div>
+        <h1>SR Switchgear</h1>
+        <p class="sub">Job Card</p>
+      </div>
+      <div class="job-no">
+        <div class="mono">{{ card.job_no }}</div>
+        <div class="status{% if is_dead %} dead{% else %} faint{% endif %}">{{ card.get_lifecycle_status_display }}</div>
+      </div>
+    </div>
+
+    <h2>Details</h2>
+    <dl class="kv">
+      <dt>Client</dt>
+      <dd>{{ card.client.legal_name }} <span class="faint mono">{{ card.client.client_code }}</span></dd>
+
+      <dt>Contact</dt>
+      <dd>
+        {% if card.client_contact %}
+          {{ card.client_contact.contact_name }}{% if card.client_contact.phone %} · {{ card.client_contact.phone }}{% endif %}
+        {% else %}
+          <span class="faint">No contact on file</span>
+        {% endif %}
+      </dd>
+
+      <dt>Enquiry date</dt>
+      <dd>{{ card.enquiry_date|date:"d/m/Y" }}</dd>
+
+      <dt>Required by</dt>
+      <dd>{% if card.required_by %}{{ card.required_by|date:"d/m/Y" }}{% else %}<span class="faint">—</span>{% endif %}</dd>
+
+      <dt>Enquiry source</dt>
+      <dd>{{ card.get_enquiry_source_display }}</dd>
+
+      <dt>Dispatch policy</dt>
+      <dd>{{ card.get_dispatch_policy_display }}</dd>
+
+      <dt>Owner</dt>
+      <dd>{{ card.owner_user.username }}</dd>
+    </dl>
+
+    {% if requirements %}
+      <h2>Requirements</h2>
+      <dl class="kv">
+        {% for key, value in requirements %}
+          <dt>{{ key }}</dt>
+          <dd>{{ value }}</dd>
+        {% endfor %}
+      </dl>
+    {% endif %}
+
+    <h2>Lines</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Description</th>
+          <th>Category</th>
+          <th class="num">Qty</th>
+          <th>Required by</th>
+          <th>Stage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in lines %}
+          <tr>
+            <td>{{ line.line_no }}</td>
+            <td>
+              {{ line.description }}
+              {% if line.specs %}
+                <div class="specs">
+                  {% for key, value in line.specs.items %}{{ key }}: {{ value }}{% if not forloop.last %} · {% endif %}{% endfor %}
+                </div>
+              {% endif %}
+            </td>
+            <td>{{ line.product_category.name }}</td>
+            <td class="num">{{ line.quantity }}</td>
+            <td>{% if line.required_by %}{{ line.required_by|date:"d/m/Y" }}{% else %}<span class="faint">—</span>{% endif %}</td>
+            <td>{{ line.current_stage.name }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if quotation %}
+      <h2>Current quotation</h2>
+      <div class="quote-box">
+        <div>
+          <div><strong>{{ card.job_no }}</strong> Rev {{ quotation.revision_no }} — {{ quotation.get_status_display }}</div>
+          {% if quotation.valid_till %}
+            <div class="faint">Valid till {{ quotation.valid_till|date:"d/m/Y" }}</div>
+          {% endif %}
+        </div>
+        <div class="amount">{{ quotation_amount }}</div>
+      </div>
+    {% endif %}
+
+    <div class="footer">
+      Printed by {{ request.user.username }} on {{ printed_at|date:"d/m/Y H:i" }}
+    </div>
+  </div>
+
+  <script>
+    // The only inline handler this app would otherwise ship — every other surface (this
+    // template included, now) keeps zero inline style/script so a future CSP lockdown
+    // (script-src/style-src 'self', no unsafe-inline) is a non-event.
+    document.getElementById("print-btn").addEventListener("click", () => window.print());
+  </script>
+</body>
+</html>
