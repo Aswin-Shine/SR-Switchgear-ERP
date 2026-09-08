@@ -44,7 +44,12 @@ test-results/
 # --- graphify (generated knowledge graph — local only, not for GitHub) ------
 graphify-out/
 
+# --- impeccable (design-system sidecar/session state — local tooling only) --
+.impeccable/
+
 # --- Internal-only docs (real business/employee data, not for a public repo) -
 CLAUDE.md
+DESIGN.md
+PRODUCT.md
 Error-Fixes.md
 company-docs/
