@@ -85,6 +85,7 @@ def test_me_payload_keys_are_exactly_this(signed_in):
         "must_change_password",
         "last_login",
         "roles",
+        "sheet_export_url",
         "grants",
     }
 
@@ -117,6 +118,29 @@ def test_me_grants_match_what_the_engine_resolves(signed_in, owner):
     }
 
     assert from_api == from_engine
+
+
+@pytest.mark.django_db
+def test_sheet_export_url_is_present_for_owner_and_absent_for_sales(settings, signed_in, client):
+    settings.GOOGLE_SHEETS_SPREADSHEET_ID = "a-real-sheet-id"
+
+    owner_payload = body(signed_in.get("/api/v1/me"))
+    assert owner_payload["sheet_export_url"] == (
+        "https://docs.google.com/spreadsheets/d/a-real-sheet-id/edit"
+    )
+
+    salesperson = UserAccountFactory(password=PASSWORD)
+    UserRoleFactory(user=salesperson, role=Role.objects.get(code=constants.ROLE_SALES))
+    client.force_login(salesperson)
+    sales_payload = body(client.get("/api/v1/me"))
+    assert sales_payload["sheet_export_url"] is None
+
+
+@pytest.mark.django_db
+def test_sheet_export_url_is_none_when_not_configured(signed_in):
+    """Even for Owner: an unconfigured spreadsheet ID means no dead link."""
+    payload = body(signed_in.get("/api/v1/me"))
+    assert payload["sheet_export_url"] is None
 
 
 @pytest.mark.django_db

@@ -214,6 +214,14 @@ MAX_UPLOAD_BYTES = env_int("MAX_UPLOAD_BYTES", 25 * 1024 * 1024)
 # Quotation PDFs specifically are capped tighter than the general upload limit.
 QUOTATION_PDF_MAX_BYTES = env_int("QUOTATION_PDF_MAX_BYTES", 5 * 1024 * 1024)
 
+# --- Google Sheets sync (job card ledger export) -----------------------------
+
+# Flattened service-account JSON key (json.dumps'd to one line). apps.core.sheets
+# is the only place this is read.
+GOOGLE_SHEETS_CREDENTIALS_JSON = env("GOOGLE_SHEETS_CREDENTIALS_JSON", "")
+GOOGLE_SHEETS_SPREADSHEET_ID = env("GOOGLE_SHEETS_SPREADSHEET_ID", "")
+GOOGLE_SHEETS_WORKSHEET_NAME = env("GOOGLE_SHEETS_WORKSHEET_NAME", "Job Cards")
+
 # --- Logging ----------------------------------------------------------------
 
 LOGGING = {

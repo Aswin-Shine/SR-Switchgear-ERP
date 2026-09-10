@@ -18,6 +18,7 @@ dependencies = [
     "gunicorn>=23",           # WSGI server.
     "django-storages[s3]==1.*",  # Phase 3 object storage.
     "whitenoise==6.*",        # Serves the built SPA from gunicorn, no nginx sidecar.
+    "gspread==6.*",           # Job-card ledger export to Google Sheets (sync_job_sheet).
 ]
 
 [project.optional-dependencies]

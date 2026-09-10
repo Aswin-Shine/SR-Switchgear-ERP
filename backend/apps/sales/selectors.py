@@ -8,7 +8,7 @@ a manager, and it matches ``idx_job_cards_open``
 
 from __future__ import annotations
 
-from django.db.models import Q, QuerySet
+from django.db.models import Count, Q, QuerySet
 
 from apps.sales.models import (
     Client,
@@ -20,6 +20,7 @@ from apps.sales.models import (
     JobNote,
     Quotation,
     QuotationLine,
+    QuotationStatus,
 )
 
 OPEN_STATUSES = (
@@ -187,3 +188,92 @@ def quotation_pdf_exists_by_card(job_card_ids) -> dict:
         .distinct()
     )
     return dict.fromkeys(ids, True)
+
+
+def current_quotations_by_card(job_card_ids) -> dict:
+    """``{job_card_id: Quotation}`` for the current (not-yet-superseded)
+    revision on each card — the bulk form of
+    ``apps.sales.services.current_quotation``, same ``status=DRAFT``
+    semantic, one query instead of one per card. Backs the Google Sheets
+    ledger export, which reads every job card at once."""
+    if not job_card_ids:
+        return {}
+    rows = (
+        Quotation.objects.filter(job_card_id__in=job_card_ids, status=QuotationStatus.DRAFT)
+        .select_related("pdf_document")
+        .order_by("job_card_id", "-revision_no")
+        .distinct("job_card_id")
+    )
+    return {row.job_card_id: row for row in rows}
+
+
+def attachment_filenames_by_card(job_card_ids) -> dict:
+    """``{job_card_id: [(filename, attached_at), ...]}``, newest first.
+    ``JobAttachment`` has no ``deleted_at`` — it isn't soft-deleted, unlike
+    everything else in this module — so no extra filter is needed beyond
+    the FK. Backs the Google Sheets ledger export."""
+    if not job_card_ids:
+        return {}
+    rows = (
+        JobAttachment.objects.filter(job_card_id__in=job_card_ids)
+        .select_related("document")
+        .order_by("job_card_id", "-attached_at")
+    )
+    out: dict = {}
+    for row in rows:
+        filename = row.document.original_filename
+        out.setdefault(row.job_card_id, []).append((filename, row.attached_at))
+    return out
+
+
+def job_card_export_rows() -> list[dict]:
+    """One flat dict per job card, for the Google Sheets ledger export
+    (``apps.core.sheets`` / the ``sync_job_sheet`` management command).
+
+    Deliberately unfiltered by status — this is a bookkeeping ledger of
+    every non-deleted card, not an "active work" view.
+    """
+    cards = list(live_job_cards().order_by("job_no"))
+    card_ids = [card.id for card in cards]
+    quotations = current_quotations_by_card(card_ids)
+    attachments = attachment_filenames_by_card(card_ids)
+    line_counts = dict(
+        JobLine.objects.filter(job_card_id__in=card_ids, deleted_at__isnull=True)
+        .values_list("job_card_id")
+        .annotate(n=Count("id"))
+        .values_list("job_card_id", "n")
+    )
+
+    rows = []
+    for card in cards:
+        quotation = quotations.get(card.id)
+        card_attachments = attachments.get(card.id, [])
+
+        quotation_pdf_filename = ""
+        if quotation is not None and quotation.pdf_document_id:
+            quotation_pdf_filename = quotation.pdf_document.original_filename
+
+        rows.append(
+            {
+                "job_no": card.job_no,
+                "client_legal_name": card.client.legal_name,
+                "client_code": card.client.client_code,
+                "lifecycle_status": card.lifecycle_status,
+                "enquiry_date": card.enquiry_date,
+                "required_by": card.required_by,
+                "owner_username": card.owner_user.username,
+                "line_count": line_counts.get(card.id, 0),
+                "quotation_no": quotation.quotation_no if quotation else "",
+                "quotation_revision": quotation.revision_no if quotation else "",
+                "quotation_status": quotation.status if quotation else "",
+                "quoted_amount": (
+                    quotation.quoted_amount
+                    if quotation and quotation.quoted_amount is not None
+                    else ""
+                ),
+                "valid_till": quotation.valid_till if quotation else "",
+                "quotation_pdf_filename": quotation_pdf_filename,
+                "attachment_filenames": "; ".join(name for name, _ in card_attachments),
+            }
+        )
+    return rows

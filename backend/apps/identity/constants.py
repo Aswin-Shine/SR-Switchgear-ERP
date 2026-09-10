@@ -79,6 +79,7 @@ RES_JOB_LINE = "job_line"
 RES_QUOTATION = "quotation"
 RES_DOCUMENT = "document"
 RES_JOB_NOTE = "job_note"
+RES_SHEET_EXPORT = "sheet_export"
 
 PERMISSION_DESCRIPTIONS: dict[tuple[str, str], str] = {
     (RES_ADMIN_SITE, "view"): "Sign in to the Django admin site",
@@ -111,6 +112,7 @@ PERMISSION_DESCRIPTIONS: dict[tuple[str, str], str] = {
     (RES_QUOTATION, "edit"): "Edit quotations",
     (RES_DOCUMENT, "create"): "Upload a file",
     (RES_JOB_NOTE, "create"): "Add a note to a job",
+    (RES_SHEET_EXPORT, "view"): "Open the Google Sheets job card export",
 }
 
 # --- The grid ---------------------------------------------------------------
@@ -174,6 +176,7 @@ GRID: dict[tuple[str, str], dict[str, str | None]] = {
     (RES_QUOTATION, "edit"):         _row(Y,    _,    _,    Y,    _,    _,    _,    _,    _),
     (RES_DOCUMENT, "create"):        _row(Y,    Y,    Y,    Y,    Y,    Y,    Y,    Y,    Y),
     (RES_JOB_NOTE, "create"):        _row(Y,    Y,    _,    Y,    Y,    Y,    Y,    Y,    Y),
+    (RES_SHEET_EXPORT, "view"):      _row(Y,    _,    _,    _,    _,    _,    _,    _,    Y),
 }
 # fmt: on
 

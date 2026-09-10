@@ -6,7 +6,14 @@ from django.contrib.auth import logout as django_logout
 from django.http import HttpRequest, JsonResponse
 
 from apps.core.api import api, iso, json_body, ok, require
-from apps.identity.services import change_own_password, resolve_permissions, roles_for
+from apps.core.sheets import sheet_url
+from apps.identity import constants
+from apps.identity.services import (
+    change_own_password,
+    has_permission,
+    resolve_permissions,
+    roles_for,
+)
 
 
 def serialize_me(user) -> dict:
@@ -28,6 +35,9 @@ def serialize_me(user) -> dict:
         "must_change_password": user.must_change_password,
         "last_login": iso(user.last_login),
         "roles": [{"code": role.code, "name": role.name} for role in roles_for(user)],
+        "sheet_export_url": (
+            sheet_url() if has_permission(user, constants.RES_SHEET_EXPORT, "view") else None
+        ),
         "grants": sorted(
             (
                 {
