@@ -128,6 +128,47 @@ services:
       start_period: 20s
       retries: 3
 
+  # Assembles one flattened row per job card and overwrites the office's
+  # Google Sheet with the current table — see
+  # backend/apps/core/management/commands/sync_job_sheet.py. No task queue
+  # exists in this stack, deliberately (nothing else needs one), so this is
+  # a timer-only loop: full overwrite every 5h, `|| true` so one failed
+  # Google API call doesn't crash-loop the container — the next tick, 5h
+  # later, is the retry. Requires GOOGLE_SHEETS_* in .env (see .env.example)
+  # and the target Sheet shared with the service account — see there.
+  sheets-sync:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    command: >
+      sh -c 'while true; do python manage.py sync_job_sheet || true; sleep 18000; done'
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 0.25
+    # The image bakes in a HEALTHCHECK that curls :8000/healthz/ (backend/
+    # Dockerfile) — correct for `web`, meaningless here since this service
+    # never serves HTTP. Without this override it reports "unhealthy"
+    # forever despite working exactly as designed.
+    healthcheck:
+      disable: true
+
   # TLS + HSTS + Basic Auth in front of `web`. Off by default like `minio`.
   # Enable with `docker compose --profile caddy up -d --build` — see
   # Caddyfile and IMPLEMENTATION.md §6 for the local-vs-deployment env
