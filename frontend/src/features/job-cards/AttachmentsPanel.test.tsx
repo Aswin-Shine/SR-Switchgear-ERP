@@ -18,6 +18,7 @@ function me(grants: GrantEntry[]): Me {
     must_change_password: false,
     last_login: null,
     roles: [{ code: "sales_exec", name: "Sales Executive" }],
+    sheet_export_url: null,
     grants,
   };
 }

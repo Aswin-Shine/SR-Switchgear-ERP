@@ -15,7 +15,7 @@ interface NavItem {
  * out of screens that would only ever show them a 403.
  */
 export function Sidebar() {
-  const { can } = useSession();
+  const { can, me } = useSession();
 
   const work: NavItem[] = [
     { to: "/", label: "Dashboard", visible: true, end: true },
@@ -59,6 +59,24 @@ export function Sidebar() {
                 {item.label}
               </NavLink>
             ))}
+        </>
+      ) : null}
+
+      {can(RESOURCE.sheetExport, ACTION.view) && me.sheet_export_url ? (
+        <>
+          <p className="sidebar__section">Reports</p>
+          {/* Owner and Accounts only (sheet_export:view) — a live mirror of
+           * every job card, synced out-of-band (apps.core.sheets). External
+           * destination, so unlike the same-origin admin link below, this
+           * opens in its own tab. */}
+          <a
+            className="nav-link"
+            href={me.sheet_export_url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Job Card Ledger ↗
+          </a>
         </>
       ) : null}
 

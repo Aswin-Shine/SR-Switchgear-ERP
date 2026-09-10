@@ -57,6 +57,10 @@ export interface Me {
   must_change_password: boolean;
   last_login: string | null;
   roles: Role[];
+  /** Only present with sheet_export:view (Owner, Accounts) — the sidebar's
+   * link to the Google Sheets job card ledger. null when not permitted, or
+   * when the sync hasn't been configured with a spreadsheet yet. */
+  sheet_export_url: string | null;
   grants: GrantEntry[];
 }
 

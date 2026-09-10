@@ -33,6 +33,7 @@ export const me: Me = {
   must_change_password: false,
   last_login: null,
   roles: [{ code: "sales_exec", name: "Sales Executive" }],
+  sheet_export_url: "https://docs.google.com/spreadsheets/d/fixture-sheet-id/edit",
   grants: [
     { resource: "job_line", action: "view", level: 0, if_owner: false },
     { resource: "job_card", action: "view", level: 0, if_owner: false },
@@ -49,6 +50,7 @@ export const me: Me = {
     { resource: "job_note", action: "create", level: 0, if_owner: false },
     { resource: "document", action: "create", level: 0, if_owner: false },
     { resource: "admin_site", action: "view", level: 0, if_owner: false },
+    { resource: "sheet_export", action: "view", level: 0, if_owner: false },
   ],
 };
 

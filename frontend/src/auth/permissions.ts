@@ -18,6 +18,7 @@ export const RESOURCE = {
   document: "document",
   jobNote: "job_note",
   adminSite: "admin_site",
+  sheetExport: "sheet_export",
 } as const;
 
 export const ACTION = {

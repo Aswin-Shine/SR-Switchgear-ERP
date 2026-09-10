@@ -5,7 +5,7 @@ import { screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Sidebar } from "./Sidebar";
 
-function me(grants: GrantEntry[]): Me {
+function me(grants: GrantEntry[], sheetExportUrl: string | null = null): Me {
   return {
     id: "u-1",
     username: "rmenon",
@@ -16,6 +16,7 @@ function me(grants: GrantEntry[]): Me {
     must_change_password: false,
     last_login: null,
     roles: [{ code: "sales_exec", name: "Sales Executive" }],
+    sheet_export_url: sheetExportUrl,
     grants,
   };
 }
@@ -84,5 +85,27 @@ describe("Sidebar", () => {
 
     renderSidebar(me([grant("admin_site", "view")]));
     expect(await screen.findByRole("link", { name: /SR Switchgear Admin/ })).toBeInTheDocument();
+  });
+
+  it("links to the sheet export only with the grant and a configured URL", async () => {
+    const { unmount } = renderSidebar(
+      me([grant("sheet_export", "view")], "https://docs.google.com/spreadsheets/d/abc/edit"),
+    );
+    expect(await screen.findByRole("link", { name: /Job Card Ledger/ })).toHaveAttribute(
+      "href",
+      "https://docs.google.com/spreadsheets/d/abc/edit",
+    );
+    unmount();
+
+    // Grant without a configured spreadsheet: no dead link.
+    const { unmount: unmount2 } = renderSidebar(me([grant("sheet_export", "view")], null));
+    expect(await screen.findByRole("link", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Job Card Ledger/ })).not.toBeInTheDocument();
+    unmount2();
+
+    // URL present but no grant: still hidden — the button is a convenience, not the gate.
+    renderSidebar(me([], "https://docs.google.com/spreadsheets/d/abc/edit"));
+    expect(await screen.findByRole("link", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Job Card Ledger/ })).not.toBeInTheDocument();
   });
 });
