@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SR Switchgear ERP</title>
 
+    <!--
+      Sets data-theme before the stylesheet paints, so a dark-preferring user never sees a
+      light flash. Must stay in sync with the storage key and resolution order in
+      src/lib/theme.ts (localStorage override, else OS preference) — that module is what
+      keeps applying it after this first paint.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("sr-erp-theme");
+          var dark =
+            stored === "dark" ||
+            (stored !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.dataset.theme = dark ? "dark" : "light";
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- Inline so the tab icon costs no request, and nothing is fetched off-origin. -->
     <link
       rel="icon"

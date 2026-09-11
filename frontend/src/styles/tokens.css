@@ -1,6 +1,10 @@
 /*
  * Design tokens. Light is defined on :root, dark is redefined under
- * prefers-color-scheme so a factory machine set to dark does not glow at night.
+ * [data-theme="dark"]. That attribute is set by src/lib/theme.ts (explicit user
+ * choice, else OS preference) and by index.html's inline script on first paint —
+ * this file has no media-query fallback of its own because the app can't render
+ * anything without JS anyway (#root is empty until React mounts), so there's no
+ * no-JS case for a CSS-only fallback to cover.
  * One accent hue; every other colour is derived from it or from the neutral ramp.
  * System font stack only — no webfont fetch, which is also why this renders on a
  * bad connection.
@@ -95,48 +99,46 @@
   --e-3: 0 12px 32px hsl(var(--h-accent) 30% 12% / 0.18);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --c-bg: hsl(var(--h-accent) 22% 9%);
-    --c-surface: hsl(var(--h-accent) 20% 12%);
-    --c-surface-2: hsl(var(--h-accent) 18% 15%);
-    --c-surface-3: hsl(var(--h-accent) 16% 19%);
-    --c-border: hsl(var(--h-accent) 14% 22%);
-    --c-border-strong: hsl(var(--h-accent) 12% 34%);
-    --c-text: hsl(var(--h-accent) 18% 93%);
-    --c-text-muted: hsl(var(--h-accent) 10% 68%);
-    /* 58%, not 54% — 54% measured ~4.66:1 against --c-surface but only ~4.28:1 against
-       --c-surface-2 (the sidebar's background), the same worse-case-surface miss as the
-       light-mode value above. 58% clears --c-surface-2 at ~4.9:1. */
-    --c-text-faint: hsl(var(--h-accent) 8% 58%);
+:root[data-theme="dark"] {
+  --c-bg: hsl(var(--h-accent) 22% 9%);
+  --c-surface: hsl(var(--h-accent) 20% 12%);
+  --c-surface-2: hsl(var(--h-accent) 18% 15%);
+  --c-surface-3: hsl(var(--h-accent) 16% 19%);
+  --c-border: hsl(var(--h-accent) 14% 22%);
+  --c-border-strong: hsl(var(--h-accent) 12% 34%);
+  --c-text: hsl(var(--h-accent) 18% 93%);
+  --c-text-muted: hsl(var(--h-accent) 10% 68%);
+  /* 58%, not 54% — 54% measured ~4.66:1 against --c-surface but only ~4.28:1 against
+     --c-surface-2 (the sidebar's background), the same worse-case-surface miss as the
+     light-mode value above. 58% clears --c-surface-2 at ~4.9:1. */
+  --c-text-faint: hsl(var(--h-accent) 8% 58%);
 
-    --c-accent: hsl(var(--h-accent) 78% 62%);
-    --c-accent-hover: hsl(var(--h-accent) 78% 70%);
-    /* 13%, not 20% — 20% put --c-accent text on this background at ~3.77:1, below AA.
-       13% clears it at ~4.56:1; still reads as a subtle tint, not a solid fill, against
-       the 12-15% neutral surfaces it sits near. */
-    --c-accent-soft: hsl(var(--h-accent) 40% 13%);
-    --c-accent-border: hsl(var(--h-accent) 40% 32%);
-    --c-on-accent: hsl(var(--h-accent) 40% 10%);
+  --c-accent: hsl(var(--h-accent) 78% 62%);
+  --c-accent-hover: hsl(var(--h-accent) 78% 70%);
+  /* 13%, not 20% — 20% put --c-accent text on this background at ~3.77:1, below AA.
+     13% clears it at ~4.56:1; still reads as a subtle tint, not a solid fill, against
+     the 12-15% neutral surfaces it sits near. */
+  --c-accent-soft: hsl(var(--h-accent) 40% 13%);
+  --c-accent-border: hsl(var(--h-accent) 40% 32%);
+  --c-on-accent: hsl(var(--h-accent) 40% 10%);
 
-    --c-success: hsl(var(--h-success) 52% 66%);
-    --c-success-soft: hsl(var(--h-success) 34% 18%);
-    --c-warn: hsl(var(--h-warn) 72% 66%);
-    --c-warn-soft: hsl(var(--h-warn) 40% 18%);
-    --c-danger: hsl(var(--h-danger) 72% 64%);
-    --c-danger-hover: hsl(var(--h-danger) 72% 72%);
-    --c-danger-soft: hsl(var(--h-danger) 40% 20%);
+  --c-success: hsl(var(--h-success) 52% 66%);
+  --c-success-soft: hsl(var(--h-success) 34% 18%);
+  --c-warn: hsl(var(--h-warn) 72% 66%);
+  --c-warn-soft: hsl(var(--h-warn) 40% 18%);
+  --c-danger: hsl(var(--h-danger) 72% 64%);
+  --c-danger-hover: hsl(var(--h-danger) 72% 72%);
+  --c-danger-soft: hsl(var(--h-danger) 40% 20%);
 
-    --c-focus: hsl(var(--h-accent) 90% 66%);
-    --c-overlay: hsl(var(--h-accent) 40% 4% / 0.62);
+  --c-focus: hsl(var(--h-accent) 90% 66%);
+  --c-overlay: hsl(var(--h-accent) 40% 4% / 0.62);
 
-    --chip-s: 44%;
-    --chip-bg-l: 22%;
-    --chip-fg-l: 82%;
-    --chip-border-l: 32%;
+  --chip-s: 44%;
+  --chip-bg-l: 22%;
+  --chip-fg-l: 82%;
+  --chip-border-l: 32%;
 
-    --e-1: 0 1px 2px hsl(0 0% 0% / 0.4);
-    --e-2: 0 2px 8px hsl(0 0% 0% / 0.45);
-    --e-3: 0 12px 32px hsl(0 0% 0% / 0.55);
-  }
+  --e-1: 0 1px 2px hsl(0 0% 0% / 0.4);
+  --e-2: 0 2px 8px hsl(0 0% 0% / 0.45);
+  --e-3: 0 12px 32px hsl(0 0% 0% / 0.55);
 }

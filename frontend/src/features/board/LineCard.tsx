@@ -15,7 +15,7 @@ export function LineCard({ line, currentStage }: { line: JobLineSummary; current
     <article className="line-card">
       <div className="line-card__top">
         <Link className="line-card__no" to={`/job-lines/${line.id}`}>
-          {line.job_card.job_no}-{line.line_no}
+          {line.job_card.job_no}
         </Link>
         {line.stage_entered_at ? <StageAge since={line.stage_entered_at} /> : null}
       </div>

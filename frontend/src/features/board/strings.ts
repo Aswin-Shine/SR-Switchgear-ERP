@@ -1,7 +1,7 @@
 export const strings = {
   title: "Pipeline board",
   subtitle: "Every job line, in the stage it is actually in.",
-  filterOwner: "Owner",
+  filterOwner: "Sales Rep",
   filterOwnerAll: "Everyone",
   filterOwnerMine: "Mine",
   filterClient: "Client",

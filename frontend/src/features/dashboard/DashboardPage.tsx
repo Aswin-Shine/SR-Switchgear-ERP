@@ -62,7 +62,7 @@ export function DashboardPage() {
                     header: jobStrings.colJobNo,
                     render: (row) => (
                       <Link className="table__row-link mono" to={`/job-lines/${row.id}`}>
-                        {row.job_card.job_no}-{row.line_no}
+                        {row.job_card.job_no}
                       </Link>
                     ),
                   },
