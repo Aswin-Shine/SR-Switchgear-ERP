@@ -5,6 +5,7 @@ from apps.sales import api
 urlpatterns = [
     path("dashboard", api.dashboard, name="dashboard"),
     path("product-categories", api.product_categories, name="product-categories"),
+    path("sync-job-sheet", api.sync_job_sheet, name="sync-job-sheet"),
 
     path("clients", api.clients, name="clients"),
     path("clients/<uuid:client_id>", api.client_detail, name="client-detail"),

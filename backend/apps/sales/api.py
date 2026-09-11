@@ -28,8 +28,9 @@ from apps.core.api import (
     paginate,
     require,
 )
-from apps.core.exceptions import NotFound, RuleViolation
+from apps.core.exceptions import NotFound, RuleViolation, UpstreamServiceError
 from apps.core.services import document_url
+from apps.core.sheets import sync_rows as sync_sheet_rows
 from apps.identity import constants
 from apps.identity.services import owner_scope_for, require_permission
 from apps.pipeline.api import serialize_board_line, serialize_stage
@@ -559,3 +560,22 @@ def dashboard(request: HttpRequest) -> JsonResponse:
             "recent_activity": recent_activity,
         }
     )
+
+
+# --- sheets -------------------------------------------------------------------------
+
+
+@api(["POST"])
+def sync_job_sheet(request: HttpRequest) -> JsonResponse:
+    """Manual trigger for the same full overwrite the ``sheets-sync`` sidecar runs on
+    its 5-hour timer (``apps.core.management.commands.sync_job_sheet``) — for when
+    someone doesn't want to wait for the next tick. Same permission as the sidebar's
+    link to the sheet (``sheet_export:view``): whoever can see it can force a refresh.
+    """
+    require_permission(request.user, constants.RES_SHEET_EXPORT, "view")
+    headers, rows = selectors.job_card_sheet_rows()
+    try:
+        written = sync_sheet_rows(headers, rows)
+    except Exception as exc:
+        raise UpstreamServiceError(f"Google Sheets sync failed: {exc}") from exc
+    return ok({"synced": written})

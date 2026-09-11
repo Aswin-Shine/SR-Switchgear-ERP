@@ -60,6 +60,16 @@ class ConfigurationError(DomainError):
     default_code = "configuration_error"
 
 
+class UpstreamServiceError(DomainError):
+    """A dependency outside this app failed (Google Sheets, ...). The request itself was
+    fine — retrying later, or fixing the upstream credentials/availability, is what helps,
+    not changing what was sent.
+    """
+
+    status_code = 502
+    default_code = "upstream_service_error"
+
+
 class NotFound(DomainError):
     """The object does not exist, or is soft-deleted, or is invisible to the actor."""
 

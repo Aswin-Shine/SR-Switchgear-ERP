@@ -277,3 +277,59 @@ def job_card_export_rows() -> list[dict]:
             }
         )
     return rows
+
+
+_SHEET_HEADERS = [
+    "Job No",
+    "Client",
+    "Client Code",
+    "Status",
+    "Enquiry Date",
+    "Required By",
+    "Sales Rep",
+    "Lines",
+    "Quotation No",
+    "Quotation Rev",
+    "Quotation Status",
+    "Quoted Amount",
+    "Valid Till",
+    "Quotation PDF",
+    "Attachments",
+]
+
+
+def _sheet_cell(value) -> str:
+    """Every gspread cell is a JSON-primitive string — dates, Decimals, and
+    None all need to become plain text, not left as Python objects."""
+    if value is None or value == "":
+        return ""
+    return str(value)
+
+
+def job_card_sheet_rows() -> tuple[list[str], list[list[str]]]:
+    """``(headers, rows)``, shaped for ``apps.core.sheets.sync_rows`` straight from
+    ``job_card_export_rows()``. The one place the ledger's column order and cell
+    formatting are defined, so the scheduled ``sync_job_sheet`` command and the
+    manual "Sync now" endpoint (``apps.sales.api.sync_job_sheet``) can never
+    format the sheet differently from each other."""
+    rows = [
+        [
+            _sheet_cell(data["job_no"]),
+            _sheet_cell(data["client_legal_name"]),
+            _sheet_cell(data["client_code"]),
+            _sheet_cell(data["lifecycle_status"]).replace("_", " ").title(),
+            _sheet_cell(data["enquiry_date"]),
+            _sheet_cell(data["required_by"]),
+            _sheet_cell(data["owner_username"]),
+            _sheet_cell(data["line_count"]),
+            _sheet_cell(data["quotation_no"]),
+            _sheet_cell(data["quotation_revision"]),
+            _sheet_cell(data["quotation_status"]).replace("_", " ").title(),
+            _sheet_cell(data["quoted_amount"]),
+            _sheet_cell(data["valid_till"]),
+            _sheet_cell(data["quotation_pdf_filename"]),
+            _sheet_cell(data["attachment_filenames"]),
+        ]
+        for data in job_card_export_rows()
+    ]
+    return _SHEET_HEADERS, rows

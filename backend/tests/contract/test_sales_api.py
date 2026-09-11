@@ -902,3 +902,48 @@ def test_recent_activity_drops_off_after_its_time_window(signed_in, card):
 
     dashboard = body(signed_in.get("/api/v1/dashboard"))
     assert dashboard["recent_activity"] == []
+
+
+# --- sync-job-sheet --------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_a_sales_rep_cannot_trigger_a_sheet_sync(signed_in):
+    response = signed_in.post("/api/v1/sync-job-sheet")
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_an_owner_can_trigger_a_sheet_sync(owner_client, monkeypatch):
+    from apps.sales import api as sales_api
+
+    captured = {}
+
+    def fake_sync_sheet_rows(headers, rows):
+        captured["headers"] = headers
+        captured["rows"] = rows
+        return len(rows)
+
+    monkeypatch.setattr(sales_api, "sync_sheet_rows", fake_sync_sheet_rows)
+    JobCardFactory()
+
+    response = owner_client.post("/api/v1/sync-job-sheet")
+
+    assert response.status_code == 200, response.content
+    assert body(response) == {"synced": 1}
+    assert len(captured["rows"]) == 1
+
+
+@pytest.mark.django_db
+def test_a_sheet_sync_failure_surfaces_as_an_upstream_error(owner_client, monkeypatch):
+    from apps.sales import api as sales_api
+
+    def failing_sync_sheet_rows(headers, rows):
+        raise RuntimeError("permission denied: sheet not shared with service account")
+
+    monkeypatch.setattr(sales_api, "sync_sheet_rows", failing_sync_sheet_rows)
+
+    response = owner_client.post("/api/v1/sync-job-sheet")
+
+    assert response.status_code == 502
+    assert "permission denied" in body(response)["error"]["message"]

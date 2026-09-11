@@ -7,6 +7,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from apps.core.management.commands import sync_job_sheet
+from apps.sales.selectors import job_card_sheet_rows
 from tests.factories import JobCardFactory
 
 
@@ -25,9 +26,10 @@ def test_it_pushes_headers_and_one_row_per_card(monkeypatch):
 
     call_command("sync_job_sheet")
 
-    assert captured["headers"] == sync_job_sheet.HEADERS
+    expected_headers, _ = job_card_sheet_rows()
+    assert captured["headers"] == expected_headers
     assert len(captured["rows"]) == 2
-    assert all(len(row) == len(sync_job_sheet.HEADERS) for row in captured["rows"])
+    assert all(len(row) == len(expected_headers) for row in captured["rows"])
 
 
 @pytest.mark.django_db
